@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Literacy Scrollytelling – Merged</title>
+
+  <!-- Libraries -->
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="https://unpkg.com/scrollama"></script>
+  <script src="https://unpkg.com/d3-sankey@0.12.3/dist/d3-sankey.min.js"></script>
+  <script src="https://unpkg.com/d3-cloud/build/d3.layout.cloud.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
+
+  <style>
+    /* Base */
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      overflow-x: hidden;
+      background: #0b0b10;
+      color: #fff;
+    }
+    main { width: 100%; overflow: hidden; }
+    h1, h2 { margin: 0 0 0.75rem 0; }
+    p { margin: 0; }
+
+    /* Sections */
+    section.step {
+      position: relative;
+      width: 100vw;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 1s ease;
+      color: white;
+      box-sizing: border-box;
+      padding: 2rem;
+    }
+
+    .container {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 2rem;
+      width: 90%;
+      max-width: 1400px;
+      text-align: center;
+    }
+
+    .container.two-col {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      align-items: center;
+      gap: 2rem;
+    }
+
+    .text { font-size: 1.2rem; line-height: 1.6; max-width: 800px; margin: 0 auto; }
+    svg { width: 100%; max-width: 1000px; height: auto; }
+    .hidden { opacity: 0; transform: translateY(30px); transition: all 0.8s ease; }
+    .visible { opacity: 1; transform: translateY(0); }
+
+    .treemap-label { fill: #fff; font-size: 12px; pointer-events: none; }
+
+    /* Wordcloud overlay (from the improved version) */
+    .wc-bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.6s ease;
+      background: radial-gradient(1000px 800px at 50% 30%, #172554 0%, #0b0b10 70%);
+    }
+    .wc-bg.active { opacity: 1; }
+
+    .wordcloud {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0;
+      transition: opacity 0.6s ease;
+    }
+    .wordcloud.active { opacity: 1; }
+    .wordcloud span {
+      position: absolute;
+      font-weight: 700;
+      opacity: 0.55;
+      transform: scale(0);
+      transition: transform 0.3s ease, color 0.3s ease, opacity 0.3s ease;
+      color: #cbd5e1;
+      user-select: none;
+    }
+    .wordcloud span.highlight { color: #ffffff; font-weight: 800; opacity: 1 !important; transform: scale(1.8); text-shadow: 0 6px 24px rgba(0,0,0,0.35); }
+    .wordcloud span.dim { opacity: 0.18; }
+
+    /* Scene 6: quote cards */
+    #scene6 .steps6 {
+      position: relative;
+      z-index: 2; /* above cloud */
+      width: 100%;
+      max-width: 1100px;
+      margin: 10vh auto 20vh;
+      padding: 0 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 80vh; /* large gaps to create scroll room */
+    }
+    #scene6 .qstep {
+      margin: 0 auto;
+      width: min(900px, 90vw);
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      backdrop-filter: blur(8px);
+      border-radius: 18px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+      padding: clamp(1.5rem, 3vw, 3rem);
+      font-size: clamp(1.25rem, 2.2vw, 1.75rem);
+      line-height: 1.45;
+      text-align: center;
+      opacity: 0;
+      transform: translateY(60px) scale(0.96);
+      will-change: transform, opacity;
+    }
+    #scene6 .qstep strong { color: #fff; }
+
+    /* Fallback: when shown via JS, ensure visibility without GSAP */
+    #scene6 .qstep.shown { opacity: 1; transform: translateY(0) scale(1); }
+    #scene6 .lead.shown { opacity: 1; transform: translateY(0); }
+
+    #scene6 .lead {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 8vh 1rem 0;
+    }
+    #scene6 .lead h2 { font-size: clamp(1.6rem, 4vw, 2.2rem); }
+    #scene6 .lead p { color: #cbd5e1; font-size: clamp(1rem, 2vw, 1.2rem); }
+
+    /* Backgrounds per scene (copied from first, tweaked) */
+    #scene1 { background:#1E1E2F; }
+    #scene2 { background:#274060; }
+    #scene3 { background:#3B6EA5; }
+    #scene4 { background:#4C956C; }
+    #scene5 { background:#E36414; }
+    #scene6 { background: transparent; }
+
+    /* Small helpers */
+    .vis-block { width: 100%; max-width: 1400px; }
+
+    /* Outro overlay */
+    #finalOverlay {
+      position: fixed;
+      inset: 0;
+      z-index: 3;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none; /* keep scroll pass-through */
+      opacity: 0;
+      background: radial-gradient(1000px 800px at 50% 30%, #0f172a 0%, #0b0b10 70%);
+    }
+    #finalOverlay .final-quote {
+      max-width: min(1200px, 92vw);
+      text-align: center;
+      font-weight: 800;
+      line-height: 1.1;
+      font-size: clamp(2rem, 8vw, 6rem);
+      letter-spacing: -0.02em;
+    }
+    #finalOverlay .final-quote span {
+      display: inline-block;
+      transform-origin: center;
+    }
+
+    /* Extra breathing room at end so last step reliably triggers */
+    #scene6 .steps6::after {
+      content: "";
+      display: block;
+      height: 120vh;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Fixed overlay background for wordcloud (keeps the blue blob steady) -->
+  <div class="wc-bg" id="wcBg" aria-hidden="true"></div>
+  <!-- Fixed overlay wordcloud (only used in scene 6) -->
+  <div class="wordcloud" id="wordcloud"></div>
+  <div id="finalOverlay" aria-hidden="true"><div class="final-quote">We gaan ermee <span>aan de slag</span>.</div></div>
+
+  <main id="scrolly">
+    <!-- Scenes 1–5 (unchanged structure) -->
+    <section id="scene1" class="step">
+      <div class="container two-col">
+        <div class="text hidden">
+          <h1>Van afwachtend naar zelfverzekerd</h1>
+          <p>8 groepen namen deel aan onze AI-Literacy workshop, goed voor in totaal <strong>201 deelnemers</strong>. Ontdek hoe hun houding en vertrouwen groeiden doorheen het traject.</p>
+        </div>
+        <div id="vis1" class="hidden vis-block"></div>
+      </div>
+    </section>
+
+    <section id="scene2" class="step">
+      <div class="container two-col">
+        <div id="vis2" class="hidden vis-block"></div>
+        <div class="text hidden">
+          <h2>Wie zijn onze deelnemers?</h2>
+          <p>De meeste deelnemers waren nieuwsgierige ‘stiekeme superfans’ of zekere ‘maximalisten’ die AI al voorzichtig verkenden.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="scene3" class="step">
+      <div class="container two-col">
+        <div class="text hidden">
+          <h2>Comfortniveau vóór de workshop</h2>
+          <p>We zagen dat velen zich nog onzeker of afwachtend voelden om generatieve AI te gebruiken.</p>
+        </div>
+        <div id="vis3" class="hidden vis-block"></div>
+      </div>
+    </section>
+
+    <section id="scene4" class="step">
+      <div class="container">
+        <div class="text hidden">
+          <h2>De verschuiving na de workshop</h2>
+          <p>Deze Sankey visualisatie toont hoe deelnemers verschoven van hun initiële comfortniveau naar hun gevoel na de workshop.</p>
+        </div>
+        <div id="vis4" class="hidden vis-block"></div>
+      </div>
+    </section>
+
+    <section id="scene5" class="step">
+      <div class="container two-col">
+        <div id="vis5" class="hidden vis-block"></div>
+        <div class="text hidden">
+          <h2>Hoeveel sterren kreeg de workshop?</h2>
+          <p>De gemiddelde beoordeling was 4,6 sterren. Deelnemers waardeerden vooral de praktische handvaten en inspiratie.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Scene 6: new improved wordcloud experience -->
+    <section id="scene6" class="step">
+      <div class="container" style="flex-direction:column; gap: 3rem;">
+        <div class="lead hidden">
+          <h2>Wat nemen deelnemers mee?</h2>
+          <p>Scroll door de quotes; de relevante woorden lichten uit in de cloud op de achtergrond.</p>
+        </div>
+
+        <div class="steps6">
+          <div class="qstep" data-keywords="rollen, gen ai"><p>“De vele verschillende <strong>rollen</strong> die <strong>Gen AI</strong> kan hebben.”</p></div>
+          <div class="qstep" data-keywords="use cases, inspiratie"><p>“Ik vind de kaarten met <strong>use-cases</strong> superinteressant en <strong>inspirerend</strong>.”</p></div>
+          <div class="qstep" data-keywords="starten"><p>“Het is vatbaar en haalbaar om te <strong>starten</strong>.”</p></div>
+          <div class="qstep" data-keywords="llm’s, prompt"><p>“Fijn om eens te weten wat er achterliggend gebeurt bij <strong>LLM's</strong>. En hoe je dit alles kan sturen door de juiste <strong>prompt</strong> te definiëren.”</p></div>
+          <div class="qstep" data-keywords="prompt canvas, toegankelijk"><p>“Het <strong>Prompt Canvas</strong> om een prompt te schrijven is heel <strong>toegankelijk</strong>. Hangt straks boven mijn bureau.”</p></div>
+          <div class="qstep" data-keywords="tools, modellen"><p>“De verschillende <strong>tools</strong> die er zijn. De verschillende <strong>modellen</strong> die er zijn en hun specifieke voordelen.”</p></div>
+          <div class="qstep qstep-final" data-keywords="aan de slag"><p>“We gaan ermee <strong>aan de slag</strong>.”</p></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // --- Scrollama for the high-level scenes (1–6) ---
+    const scroller = scrollama();
+
+    function clearVis(id) { d3.select(id).selectAll('svg').remove(); }
+
+    // Treemap
+    function drawTreemap(id, data) {
+      const width = 800, height = 500;
+      const svg = d3.select(id).append('svg').attr('viewBox', `0 0 ${width} ${height}`);
+      const color = d3.scaleOrdinal(d3.schemeTableau10);
+      const root = d3.hierarchy({ children: data }).sum(d => d.value).sort((a,b)=>b.value-a.value);
+      d3.treemap().size([width, height]).padding(3)(root);
+
+      const nodes = svg.selectAll('g').data(root.leaves()).enter().append('g').attr('transform', d => `translate(${d.x0},${d.y0})`);
+      nodes.append('rect').attr('width', 0).attr('height', 0).attr('fill', d => color(d.data.label))
+        .transition().duration(1000).attr('width', d => d.x1 - d.x0).attr('height', d => d.y1 - d.y0);
+
+      nodes.append('text')
+        .attr('x', 6)
+        .attr('y', 18)
+        .attr('class', 'treemap-label')
+        .style('font-size', d => Math.min(16, Math.max(10, (d.x1 - d.x0) / 10)) + 'px')
+        .text(d => `${d.data.label} (${d.data.value})`)
+        .each(function(d){
+          const boxWidth = d.x1 - d.x0;
+          const textLength = this.getComputedTextLength();
+          if (textLength > boxWidth - 10) {
+            d3.select(this).attr('y', 12).text(`${d.data.label.split(' ')[0]}… (${d.data.value})`);
+          }
+        });
+    }
+
+    // Donut
+    function drawDonut(id, data) {
+      const width = 400, height = 400, radius = Math.min(width, height) / 2;
+      const svg = d3.select(id).append('svg').attr('viewBox', `0 0 ${width} ${height}`)
+        .append('g').attr('transform', `translate(${width/2},${height/2})`);
+      const color = d3.scaleOrdinal(d3.schemeTableau10);
+      const pie = d3.pie().sort(null).value(d => d.value);
+      const arc = d3.arc().innerRadius(radius*0.5).outerRadius(radius);
+      const arcs = svg.selectAll('path').data(pie(data)).enter().append('g');
+      arcs.append('path').attr('fill', d=>color(d.data.label)).transition().duration(1000)
+        .attrTween('d', d => { const i=d3.interpolate({startAngle:0,endAngle:0},d); return t=>arc(i(t)); });
+      const total = d3.sum(data, d=>d.value);
+      arcs.append('text').attr('transform', d=>`translate(${arc.centroid(d)})`).attr('text-anchor','middle')
+        .style('font-size','12px').style('fill','#fff')
+        .text(d=>`${d.data.label} (${Math.round(d.data.value/total*100)}%)`);
+    }
+
+    // Sankey
+    function drawSankey(id,nodes,links){
+      clearVis(id);
+      const width=1400,height=700,svg=d3.select(id).append('svg').attr('viewBox',`0 0 ${width} ${height}`);
+      const color=d3.scaleOrdinal(d3.schemeTableau10);
+      const sankey=d3.sankey().nodeWidth(40).nodePadding(30).extent([[1,1],[width-1,height-6]]);
+      const graph=sankey({nodes:nodes.map(d=>Object.assign({},d)),links:links.map(d=>Object.assign({},d))});
+
+      svg.append('g').selectAll('rect').data(graph.nodes).join('rect')
+        .attr('x',d=>d.x0).attr('y',d=>d.y0).attr('height',d=>d.y1-d.y0).attr('width',d=>d.x1-d.x0).attr('fill',d=>color(d.name));
+
+      svg.append('g').attr('fill','none').selectAll('path').data(graph.links).join('path')
+        .attr('d',d3.sankeyLinkHorizontal()).attr('stroke',d=>color(d.source.name))
+        .attr('stroke-width',d=>Math.max(1,d.width)).attr('opacity',0.5);
+
+      svg.append('g').style('font','16px sans-serif').selectAll('text').data(graph.nodes).join('text')
+        .attr('x',d=>d.x0<width/2?d.x1+8:d.x0-8).attr('y',d=>(d.y1+d.y0)/2)
+        .attr('text-anchor',d=>d.x0<width/2?'start':'end').text(d=>`${d.name} (${d.value})`);
+    }
+
+    // --- Wordcloud utilities (improved scene) ---
+    gsap.registerPlugin(ScrollTrigger);
+    const WORD_FREQUENCIES = {
+      'prompt': 12,
+      'canvas': 8,
+      'prompts': 3,
+      'tips': 5,
+      'guide': 2,
+      'gids': 2,
+      'context': 4,
+      'llm’s': 9,
+      'ideeën': 6,
+      'starten': 4,
+      'use cases': 7,
+      'inspiratie': 6,
+      'variëren': 2,
+      'rollen': 3,
+      'tools': 5,
+      'modellen': 5
+    };
+    const cloud = document.getElementById('wordcloud');
+    let cloudBuilt = false;
+
+    // Track if user has reached the finale to keep overlay locked and prevent cloud reappearing
+    let reachedFinal = false;
+
+    function buildCloudOnce() {
+      if (cloudBuilt) return;
+      Object.entries(WORD_FREQUENCIES).forEach(([word, freq]) => {
+        const span = document.createElement('span');
+        span.textContent = word;
+        span.style.left = Math.random() * 90 + '%';
+        span.style.top = Math.random() * 90 + '%';
+        const size = 1 + (freq / 12) * 2;
+        span.style.fontSize = size + 'rem';
+        cloud.appendChild(span);
+      });
+      cloudBuilt = true;
+    }
+
+    function animateWord(el) {
+      gsap.to(el, {
+        x: 'random(-40, 40)',
+        y: 'random(-40, 40)',
+        opacity: 0.45 + Math.random() * 0.45,
+        duration: 5 + Math.random() * 5,
+        repeat: -1,
+        yoyo: true,
+        ease: 'sine.inOut'
+      });
+    }
+
+    function explodeWords() {
+      const spans = document.querySelectorAll('.wordcloud span');
+      gsap.fromTo(spans, {
+        scale: 0,
+        opacity: 0,
+        y: 100,
+      }, {
+        scale: 1,
+        opacity: 1,
+        y: 0,
+        stagger: 0.03,
+        ease: 'back.out(2)',
+        duration: 1.2,
+        onComplete: () => spans.forEach(s => animateWord(s))
+      });
+    }
+
+    function clearHighlights() {
+      document.querySelectorAll('.wordcloud span').forEach(s => { s.classList.remove('highlight'); s.classList.remove('dim'); });
+    }
+
+    function highlightKeywords(keywordString) {
+      clearHighlights();
+      const keys = (keywordString || '').split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
+      const spans = Array.from(document.querySelectorAll('.wordcloud span'));
+      const hits = new Set();
+      spans.forEach(s => {
+        const t = s.textContent.toLowerCase();
+        if (keys.some(k => t.includes(k))) { s.classList.add('highlight'); hits.add(s); }
+      });
+      spans.forEach(s => { if (!hits.has(s)) s.classList.add('dim'); });
+      hits.forEach(h => {
+        gsap.fromTo(h, { scale: 1.2 }, { scale: 1.8, duration: 0.4, yoyo: true, repeat: 1, ease: 'power2.out' });
+      });
+    }
+
+    // Canvas fallback helper: make sure wordcloud activates when Scene 6 is on screen,
+    // even if ScrollTrigger events don't fire in the preview environment.
+    function maybeActivateCloudFallback() {
+      const s6 = document.getElementById('scene6');
+      if (!s6) return;
+      const r = s6.getBoundingClientRect();
+      const vh = window.innerHeight || document.documentElement.clientHeight;
+      const visible = r.top < vh && r.bottom > 0;
+      if (visible && !reachedFinal) {
+        buildCloudOnce();
+        const bg = document.getElementById('wcBg');
+        const wc = document.getElementById('wordcloud');
+        if (bg && !bg.classList.contains('active')) bg.classList.add('active');
+        if (wc && !wc.classList.contains('active')) {
+          wc.classList.add('active');
+          explodeWords();
+        }
+      }
+    }
+
+    // Canvas fallback: reveal quotes + keyword highlights without ScrollTrigger
+    function maybeRevealQuoteFallback() {
+      const steps = document.querySelectorAll('#scene6 .qstep');
+      const lead = document.querySelector('#scene6 .lead');
+      const finalStepEl = document.querySelector('#scene6 .qstep-final');
+      const vh = window.innerHeight || document.documentElement.clientHeight;
+
+      const inBand = (rect, topFrac = 0.7, bottomFrac = 0.3) => (rect.top < vh*topFrac && rect.bottom > vh*bottomFrac);
+
+      if (lead) {
+        const lr = lead.getBoundingClientRect();
+        if (inBand(lr, 0.85, 0.15)) lead.classList.add('shown');
+      }
+
+      steps.forEach(el => {
+        const r = el.getBoundingClientRect();
+        if (inBand(r)) {
+          if (!el.classList.contains('shown')) {
+            el.classList.add('shown');
+            const kw = el.getAttribute('data-keywords') || '';
+            highlightKeywords(kw);
+          }
+        }
+      });
+
+      if (finalStepEl) {
+        const fr = finalStepEl.getBoundingClientRect();
+        const finaleVisible = inBand(fr, 0.75, 0.25);
+        const s6 = document.getElementById('scene6');
+        const sr = s6 ? s6.getBoundingClientRect() : null;
+        const s6Visible = !!sr && sr.top < vh && sr.bottom > 0;
+
+        if (reachedFinal && fr.top > vh*0.8) reachedFinal = false;
+
+        if (finaleVisible || (reachedFinal && s6Visible)) {
+          reachedFinal = true;
+          gsap.to('#wordcloud', { opacity: 0, duration: 0.4, ease: 'power2.out' });
+          gsap.to('#wcBg', { opacity: 0, duration: 0.4, ease: 'power2.out' });
+          gsap.to('#finalOverlay', { opacity: 1, duration: 0.6, ease: 'power2.out' });
+        } else if (s6Visible && !reachedFinal) {
+          gsap.to('#finalOverlay', { opacity: 0, duration: 0.3, ease: 'power2.out' });
+          gsap.to('#wcBg', { opacity: 1, duration: 0.3, ease: 'power2.out' });
+          gsap.to('#wordcloud', { opacity: 1, duration: 0.3, ease: 'power2.out' });
+        }
+      }
+    }
+
+    function setupScene6() {
+      // Activate cloud when entering scene 6
+      ScrollTrigger.create({
+        trigger: '#scene6',
+        start: 'top 75%',
+        end: 'bottom top',
+        onEnter: () => {
+          buildCloudOnce();
+          document.getElementById('wcBg').classList.add('active');
+          document.getElementById('wordcloud').classList.add('active');
+          explodeWords();
+        },
+        onLeave: () => {
+          document.getElementById('wordcloud').classList.remove('active');
+          document.getElementById('wcBg').classList.remove('active');
+          clearHighlights();
+        },
+        onEnterBack: () => {
+          document.getElementById('wcBg').classList.add('active');
+          document.getElementById('wordcloud').classList.add('active');
+        },
+        onLeaveBack: () => {
+          reachedFinal = false;
+          document.getElementById('wordcloud').classList.remove('active');
+          document.getElementById('wcBg').classList.remove('active');
+          clearHighlights();
+        }
+      });
+
+      // Finale: when the last quote enters, fade out the wordcloud and reveal a fullscreen ending
+      const finalStep = document.querySelector('#scene6 .qstep-final');
+      if (finalStep) {
+        ScrollTrigger.create({
+          trigger: finalStep,
+          start: 'top 65%',
+          end: 'bottom 40%',
+          onEnter: () => {
+            reachedFinal = true;
+            gsap.to('#wordcloud', { opacity: 0, duration: 0.8, ease: 'power2.out' });
+            gsap.to('#wcBg', { opacity: 0, duration: 0.8, ease: 'power2.out' });
+            gsap.to('#finalOverlay', { opacity: 1, duration: 1.0, ease: 'power2.out' });
+            gsap.fromTo('#finalOverlay .final-quote span', { scale: 0.9 }, { scale: 1.05, yoyo: true, repeat: 1, duration: 0.8, ease: 'power2.inOut' });
+          },
+          onLeaveBack: () => {
+            reachedFinal = false;
+            gsap.to('#finalOverlay', { opacity: 0, duration: 0.5, ease: 'power2.out' });
+            gsap.to('#wordcloud', { opacity: 1, duration: 0.6, ease: 'power2.out' });
+            gsap.to('#wcBg', { opacity: 1, duration: 0.6, ease: 'power2.out' });
+          }
+        });
+      }
+
+      // Animate the quote cards + highlight keywords
+      document.querySelectorAll('#scene6 .qstep').forEach(el => {
+        ScrollTrigger.create({
+          trigger: el,
+          start: 'top 70%',
+          end: 'bottom 60%',
+          onEnter: () => {
+            gsap.to(el, { opacity: 1, y: 0, scale: 1, duration: 0.6, ease: 'power3.out' });
+            const kw = el.getAttribute('data-keywords') || '';
+            highlightKeywords(kw);
+          },
+          onLeave: () => {
+            gsap.to(el, { opacity: 0.3, duration: 0.3 });
+          },
+          onEnterBack: () => {
+            gsap.to(el, { opacity: 1, y: 0, scale: 1, duration: 0.4, ease: 'power3.out' });
+            const kw = el.getAttribute('data-keywords') || '';
+            highlightKeywords(kw);
+          },
+          onLeaveBack: () => {
+            reachedFinal = false;
+            gsap.to(el, { opacity: 0.3, duration: 0.3 });
+          }
+        });
+      });
+    }
+
+    // --- Initialize sections drawing with scrollama ---
+    // Fallback listeners for canvas preview
+    window.addEventListener('scroll', maybeActivateCloudFallback, { passive: true });
+    window.addEventListener('resize', maybeActivateCloudFallback);
+    setTimeout(maybeActivateCloudFallback, 400);
+    window.addEventListener('scroll', maybeRevealQuoteFallback, { passive: true });
+    window.addEventListener('resize', maybeRevealQuoteFallback);
+    setTimeout(maybeRevealQuoteFallback, 500);
+    document.addEventListener('DOMContentLoaded', function() {
+      scroller.setup({ step: '.step', offset: 0.5 }).onStepEnter(resp => {
+        const el = resp.element;
+        el.querySelectorAll('.hidden').forEach(d => d.classList.add('visible'));
+
+        if (!el.classList.contains('drawn')) {
+          if (el.id === 'scene1') drawTreemap('#vis1',[
+            {label:'Sylvester',value:28},{label:'TM Communicatie Jaar 1',value:40},{label:'Testlabo Gen AI on Target',value:32},
+            {label:'Roularta',value:18},{label:'DexVille / FCR Media',value:24},{label:'Dazzle Events',value:6},
+            {label:'The Oval Office',value:6},{label:'Ferm',value:47}
+          ]);
+          if (el.id === 'scene2') drawDonut('#vis2',[
+            {label:'Superfan',value:52},{label:'Maximalist',value:34},{label:'Observeerder',value:6},{label:'Underdog',value:5},{label:'Rebel',value:2}
+          ]);
+          if (el.id === 'scene3') drawDonut('#vis3',[
+            {label:'Comfortabel',value:3},{label:'Afwachtend',value:10},{label:'Onzeker',value:6}
+          ]);
+          if (el.id === 'scene4') drawSankey('#vis4',[
+            {name:'Comfortabel voor'},{name:'Afwachtend voor'},{name:'Onzeker voor'},{name:'Comfortabel na'},{name:'Afwachtend na'},{name:'Onzeker na'}],
+            [{source:0,target:3,value:2},{source:0,target:4,value:1},{source:1,target:3,value:5},{source:1,target:4,value:3},{source:1,target:5,value:2},{source:2,target:3,value:5},{source:2,target:4,value:2},{source:2,target:5,value:2}]
+          );
+          if (el.id === 'scene5') drawDonut('#vis5',[
+            {label:'3 sterren',value:11},{label:'4 sterren',value:29},{label:'5 sterren',value:21}
+          ]);
+          // scene6 is handled by GSAP/ScrollTrigger – no D3 wordcloud here
+          if (el.id === 'scene6') {
+            setupScene6();
+          }
+          el.classList.add('drawn');
+        }
+      });
+
+      window.addEventListener('resize', scroller.resize);
+    });
+  </script>
+</body>
+</html>
