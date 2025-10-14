@@ -3,140 +3,106 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI Literacy Scrollytelling – Thomas More stijl</title>
+  <title>AI Literacy Scrollytelling – robuuste, fouttolerante build</title>
 
-  <!-- Libraries -->
-  <script src="https://d3js.org/d3.v7.min.js"></script>
-  <script src="https://unpkg.com/scrollama"></script>
-  <script src="https://unpkg.com/d3-sankey@0.12.3/dist/d3-sankey.min.js"></script>
-  <script src="https://unpkg.com/d3-cloud/build/d3.layout.cloud.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+  <!-- Optionele libs (mogen falen; er zijn fallbacks) -->
+  <script defer src="https://d3js.org/d3.v7.min.js" onerror="(window.__LIB_ERRS ||= []).push('d3')"></script>
+  <script defer src="https://unpkg.com/d3-sankey@0.12.3/dist/d3-sankey.min.js" onerror="(window.__LIB_ERRS ||= []).push('d3-sankey')"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js" onerror="(window.__LIB_ERRS ||= []).push('gsap')"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js" onerror="(window.__LIB_ERRS ||= []).push('scrolltrigger')"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
 
   <style>
     :root{
-      /* Hoofdkleuren */
-      --tm-orange:#fa6432; /* PMS 2026 C */
-      --tm-blue:#00283c;   /* PMS 2189 C */
-      --tm-white:#ffffff;
-      --tm-black:#000a1e;  /* koud zwart */
-      /* Functionele grijzen */
-      --tm-g1:#dee1e4;
-      --tm-g2:#e8ebee;
-      --tm-g3:#f2f5f8;
-      /* Secundair palet voor grafieken/legendes */
-      --tm-s-yellow:#ffc87d;
-      --tm-s-grass:#c8e164;
-      --tm-s-blue:#4bafe1;
-      --tm-s-lav:#7d96e1;
-      --tm-s-green:#87d278;
-      --tm-s-turq:#64c8c8;
-      --tm-s-purple:#967dc8;
-      --tm-s-fuchsia:#c87dc8;
+      --tm-orange:#fa6432; --tm-blue:#00283c; --tm-white:#fff; --tm-black:#000a1e;
+      --tm-g1:#dee1e4; --tm-g2:#e8ebee; --tm-g3:#f2f5f8;
+      --tm-s-yellow:#ffc87d; --tm-s-grass:#c8e164; --tm-s-blue:#4bafe1; --tm-s-lav:#7d96e1;
+      --tm-s-green:#87d278; --tm-s-turq:#64c8c8; --tm-s-purple:#967dc8; --tm-s-fuchsia:#c87dc8;
     }
 
-    /* Basis */
-    html, body { margin: 0; padding: 0; overflow-x: hidden; font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: var(--tm-white); color: var(--tm-black); }
-    main { width: 100%; overflow: hidden; }
-    h1, h2 { margin: 0 0 0.75rem 0; line-height: 1.15; }
-    p { margin: 0; }
-
-    /* Licht / Donker sectie-thema's voor leesbaarheid */
-    .step.light { color: var(--tm-black); }
-    .step.dark  { color: var(--tm-white); }
-    .step.dark a { color: var(--tm-white); }
+    html, body{ margin:0; padding:0; overflow-x:hidden; font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif; background:var(--tm-white); color:var(--tm-black); }
+    main{ width:100%; overflow:hidden; }
+    h1,h2{ margin:0 0 .75rem 0; line-height:1.15; }
+    p{ margin:0; }
 
     /* Sections */
-    section.step { position: relative; width: 100vw; min-height: 100vh; display: flex; align-items: center; justify-content: center; transition: background 0.6s ease, color 0.6s ease; box-sizing: border-box; padding: 2rem; }
+    section.step{ position:relative; width:100vw; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:2rem; box-sizing:border-box; transition:background .6s ease, color .6s ease; }
+    .step.light{ color:var(--tm-black); }
+    .step.dark{ color:var(--tm-white); }
 
-    .container { display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:2rem; width:90%; max-width:1400px; text-align:center; }
-    .container.two-col { display:grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); align-items:center; gap:2rem; }
-    /* Maak scene4 iets breder voor de Sankey */
-    #scene4 .container { width:96%; max-width:1600px; }
+    .container{ display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:2rem; width:90%; max-width:1400px; text-align:center; }
+    .two-col{ display:grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); align-items:center; gap:2rem; }
 
-    .text { font-size:1.2rem; line-height:1.6; max-width:800px; margin:0 auto; }
-    svg { width:100%; max-width:1000px; height:auto; }
-    .hidden { opacity:0; transform:translateY(30px); transition:all 0.8s ease; }
-    .visible { opacity:1; transform:translateY(0); }
+    /* Scene 4 – ruimer en groter canvas */
+    #scene4.step{ min-height:130vh; padding-top:10vh; padding-bottom:12vh; }
+    #scene4 .container{ width:96%; max-width:1600px; flex-direction:column; gap:clamp(2rem,5vw,4rem); }
+    #vis4 svg{ width:min(96vw,1600px); max-width:1600px; height:auto; margin-block:clamp(.5rem,2vh,2rem); }
 
-    /* Grafiek-tekst volgt sectiekleur automatisch */
-    .treemap-label, .chart-label { fill: currentColor; }
+    .text{ font-size:1.2rem; line-height:1.6; max-width:800px; margin:0 auto; }
+    svg{ width:100%; max-width:1000px; height:auto; }
 
-    /* Wordcloud & overlay */
-    .wc-bg { position:fixed; inset:0; z-index:0; pointer-events:none; opacity:0; transition: opacity 0.6s ease; background-color: var(--tm-blue); background-image: radial-gradient(1200px 900px at 50% 30%, rgba(0,10,30,0.96) 0%, rgba(0,40,60,0.92) 40%, rgba(0,40,60,0.0) 78%); }
-    .wc-bg.active { opacity:1; }
+    .hidden{ opacity:0; transform:translateY(24px); }
+    .visible{ opacity:1; transform:translateY(0); transition:opacity .6s ease, transform .6s ease; }
 
-    .wordcloud { position:fixed; inset:0; overflow:hidden; pointer-events:none; z-index:1; opacity:0; transition:opacity 0.6s ease; }
-    .wordcloud.active { opacity:1; }
-    .wordcloud span { position:absolute; font-weight:700; opacity:0.55; transform:scale(0); transition: transform 0.3s ease, color 0.3s ease, opacity 0.3s ease; color: var(--tm-g1); user-select:none; }
-    .wordcloud span.highlight { color: var(--tm-white); font-weight:800; opacity:1 !important; transform:scale(1.8); text-shadow:0 6px 24px rgba(0,0,0,0.35); }
-    .wordcloud span.dim { opacity:0.18; }
+    /* Wordcloud */
+    .wc-bg{ position:fixed; inset:0; z-index:0; pointer-events:none; opacity:0; transition:opacity .6s ease; background-color:var(--tm-blue); background-image:radial-gradient(1200px 900px at 50% 30%, rgba(0,10,30,.96) 0%, rgba(0,40,60,.92) 40%, rgba(0,40,60,0) 78%); }
+    .wc-bg.active{ opacity:1; }
+    .wordcloud{ position:fixed; inset:0; overflow:hidden; pointer-events:none; z-index:1; opacity:0; transition:opacity .6s ease; }
+    .wordcloud.active{ opacity:1; }
+    .wordcloud span{ position:absolute; font-weight:700; opacity:.55; transform:scale(1); color:var(--tm-g1); user-select:none; }
+    .wordcloud span.highlight{ color:var(--tm-white); font-weight:800; opacity:1; text-shadow:0 6px 24px rgba(0,0,0,.35); }
+    .wordcloud span.dim{ opacity:.18; }
 
-    /* Scene 6: quote cards – beter contrast op licht & donker */
-    #scene6 .steps6 { position:relative; z-index:2; width:100%; max-width:1100px; margin:10vh auto 20vh; padding:0 1rem; display:flex; flex-direction:column; gap:80vh; }
-    #scene6 .qstep { margin:0 auto; width:min(900px, 90vw); background: linear-gradient(180deg, rgba(255,255,255,0.78), rgba(255,255,255,0.78)); border: 1px solid var(--tm-g1); border-radius: 18px; box-shadow: 0 20px 50px rgba(0,0,0,0.12); padding: clamp(1.5rem, 3vw, 3rem); font-size: clamp(1.25rem, 2.2vw, 1.75rem); line-height:1.45; text-align:center; color: var(--tm-black); opacity:0; transform: translateY(60px) scale(0.96); will-change: transform, opacity; }
-    #scene6 .qstep strong { color: var(--tm-blue); }
-    #scene6 .qstep.shown { opacity:1; transform: translateY(0) scale(1); }
+    /* Scene 6 */
+    #scene6 .steps6{ position:relative; z-index:2; width:100%; max-width:1100px; margin:10vh auto 20vh; padding:0 1rem; display:flex; flex-direction:column; gap:80vh; }
+    #scene6 .qstep{ margin:0 auto; width:min(900px,90vw); background:linear-gradient(180deg, rgba(255,255,255,.78), rgba(255,255,255,.78)); border:1px solid var(--tm-g1); border-radius:18px; box-shadow:0 20px 50px rgba(0,0,0,.12); padding:clamp(1.5rem,3vw,3rem); font-size:clamp(1.25rem,2.2vw,1.75rem); line-height:1.45; text-align:center; color:var(--tm-black); opacity:0; transform:translateY(60px) scale(.96); transition:opacity .5s ease, transform .5s ease; }
+    #scene6 .qstep strong{ color:var(--tm-blue); }
+    #scene6 .qstep.shown{ opacity:1; transform:translateY(0) scale(1); }
 
-    #scene6 .lead { position:relative; z-index:2; text-align:center; max-width:900px; margin:0 auto; padding:8vh 1rem 0; }
-    #scene6 .lead h2 { font-size: clamp(1.6rem, 4vw, 2.2rem); }
-    #scene6 .lead p { color: #334155; font-size: clamp(1rem, 2vw, 1.2rem); }
+    #scene6 .lead{ position:relative; z-index:2; text-align:center; max-width:900px; margin:0 auto; padding:8vh 1rem 0; }
 
-    /* Achtergronden per scene (afwisselend gekleurd/licht) */
-    #scene1 { background: var(--tm-g3); }
-    #scene2 { background: var(--tm-blue); }
-    #scene3 { background: var(--tm-white); }
-    #scene4 { background: var(--tm-orange); }
-    #scene5 { background: var(--tm-g2); }
-    #scene6 { background: var(--tm-white); }
-    /* Donkere variant voor scene6 wanneer de wordcloud actief is */
-    #scene6.wc-on.step { background: var(--tm-blue); color: var(--tm-white); }
+    /* Achtergronden */
+    #scene1{ background:var(--tm-g3); } #scene2{ background:var(--tm-blue); } #scene3{ background:var(--tm-white); }
+    #scene4{ background:var(--tm-orange); } #scene5{ background:var(--tm-g2); } #scene6{ background:var(--tm-white); }
+    #scene6.wc-on.step{ background:var(--tm-blue); color:var(--tm-white); }
 
-    /* Kleurthema-klassers per scene voor automatische tekstcontrast */
-    #scene1.step, #scene3.step, #scene5.step, #scene6.step { color: var(--tm-black); }
-    #scene2.step, #scene4.step { color: var(--tm-white); }
+    /* Outro overlay */
+    #finalOverlay{ position:fixed; inset:0; z-index:3; display:flex; align-items:center; justify-content:center; pointer-events:none; opacity:0; background:radial-gradient(1000px 800px at 50% 30%, rgba(255,255,255,.04) 0%, rgba(255,255,255,0) 70%); color:var(--tm-white); transition:opacity .6s ease; }
+    #finalOverlay .final-quote{ max-width:min(1200px,92vw); text-align:center; font-weight:800; line-height:1.05; font-size:clamp(2rem, 8vw, 6rem); letter-spacing:-.02em; }
+    #finalOverlay .final-quote span{ color:var(--tm-orange); }
 
-    /* Outro overlay – contrastrijk op wit */
-    #finalOverlay { position:fixed; inset:0; z-index:3; display:flex; align-items:center; justify-content:center; pointer-events:none; opacity:0; background: radial-gradient(1000px 800px at 50% 30%, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.0) 70%); color: var(--tm-white); }
-    #finalOverlay .final-quote { max-width:min(1200px,92vw); text-align:center; font-weight:800; line-height:1.05; font-size:clamp(2rem, 8vw, 6rem); letter-spacing:-0.02em; }
-    #finalOverlay .final-quote span { display:inline-block; transform-origin:center; color: var(--tm-orange); }
+    #scene6 .steps6::after{ content:""; display:block; height:120vh; }
 
-    /* Extra ruimte onderaan zodat laatste step triggert */
-    #scene6 .steps6::after { content:""; display:block; height: 120vh; }
+    /* Underline fx (scene4 title) */
+    .fx-underline{ background-image:linear-gradient(currentColor,currentColor); background-position:0 100%; background-repeat:no-repeat; background-size:0% 10%; padding-bottom:.1em; transition:background-size .6s ease; }
 
-    /* Helper voor fancy underline animatie (scene4) */
-    .fx-underline {
-      background-image: linear-gradient(currentColor, currentColor);
-      background-position: 0 100%;
-      background-repeat: no-repeat;
-      background-size: 0% 10%;
-      padding-bottom: .1em;
-    }
+    /* Diagnostics */
+    #diag{ position:fixed; right:10px; bottom:10px; z-index:9; background:rgba(255,255,255,.9); border:1px solid var(--tm-g1); border-radius:10px; padding:.5rem .75rem; font-size:.85rem; max-width:min(46ch, 90vw); box-shadow:0 6px 24px rgba(0,0,0,.12); }
+    #diag summary{ cursor:pointer; }
+
+    /* Prevent layout jumps */
+    html{ overflow-anchor:none; }
   </style>
 </head>
 <body>
-
-  <!-- Wordcloud overlay -->
   <div class="wc-bg" id="wcBg" aria-hidden="true"></div>
-  <div class="wordcloud" id="wordcloud"></div>
+  <div class="wordcloud" id="wordcloud" aria-hidden="true"></div>
   <div id="finalOverlay" aria-hidden="true"><div class="final-quote">We gaan ermee <span>aan de slag</span>.</div></div>
 
   <main id="scrolly">
-    <!-- Scenes 1–5 -->
     <section id="scene1" class="step light">
       <div class="container two-col">
         <div class="text hidden">
           <h1>Van afwachtend naar zelfverzekerd</h1>
           <p>In MediaGenie doorliepen <strong>201 deelnemers</strong> uit <strong>8 organisaties</strong> onze AI Fluency-workshop. In deze scrollytelling zie je waar ze startten, wat er veranderde en wat ze morgen anders doen.</p>
         </div>
-        <div id="vis1" class="hidden vis-block"></div>
+        <div id="vis1" class="hidden vis-block" aria-label="Treemap"></div>
       </div>
     </section>
 
     <section id="scene2" class="step dark">
       <div class="container two-col">
-        <div id="vis2" class="hidden vis-block"></div>
+        <div id="vis2" class="hidden vis-block" aria-label="Donut"></div>
         <div class="text hidden">
           <h2>Wie zat er in de zaal?</h2>
           <p>Vooral nieuwsgierige ‘stiekeme superfans’ en zelfzekere ‘maximalisten’. Observeerders en underdogs waren in de minderheid; rebellen vormden een kleine maar prikkelende groep.</p>
@@ -150,23 +116,23 @@
           <h2>Comfortniveau vóór de workshop</h2>
           <p>Vooraf voelde een groot deel zich afwachtend of onzeker om Generatieve AI te gebruiken. Slechts enkelen noemden zich comfortabel—een signaal dat praktische handvaten nodig waren.</p>
         </div>
-        <div id="vis3" class="hidden vis-block"></div>
+        <div id="vis3" class="hidden vis-block" aria-label="Donut"></div>
       </div>
     </section>
 
     <section id="scene4" class="step dark">
       <div class="container">
         <div class="text hidden">
-          <h2>De verschuiving na de workshop</h2>
+          <h2 class="fx-underline">De verschuiving na de workshop</h2>
           <p>Wie onzeker of afwachtend startte, schoof vaak op richting comfortabel na de workshop.</p>
         </div>
-        <div id="vis4" class="hidden vis-block"></div>
+        <div id="vis4" class="hidden vis-block" aria-label="Sankey"></div>
       </div>
     </section>
 
     <section id="scene5" class="step light">
       <div class="container two-col">
-        <div id="vis5" class="hidden vis-block"></div>
+        <div id="vis5" class="hidden vis-block" aria-label="Donut"></div>
         <div class="text hidden">
           <h2>Hoe werd de workshop beoordeeld?</h2>
           <p>De gemiddelde beoordeling was 4,6 sterren. Deelnemers waardeerden vooral de praktische handvaten en inspiratie.</p>
@@ -174,14 +140,12 @@
       </div>
     </section>
 
-    <!-- Scene 6: wordcloud + quotes -->
     <section id="scene6" class="step light">
       <div class="container" style="flex-direction:column; gap: 3rem;">
         <div class="lead hidden">
           <h2>Wat blijft hangen?</h2>
           <p>Scroll door de quotes; de relevante woorden lichten uit in de cloud op de achtergrond.</p>
         </div>
-
         <div class="steps6">
           <div class="qstep" data-keywords="rollen, gen ai"><p>“De vele verschillende <strong>rollen</strong> die <strong>Gen AI</strong> kan hebben.”</p></div>
           <div class="qstep" data-keywords="use cases, inspiratie"><p>“Ik vind de kaarten met <strong>use-cases</strong> superinteressant en <strong>inspirerend</strong>.”</p></div>
@@ -195,422 +159,254 @@
     </section>
   </main>
 
+  <!-- Diagnostics / self-tests -->
+  <details id="diag">
+    <summary>Diagnostics</summary>
+    <div id="diag-body"></div>
+  </details>
+
   <script>
-    // --- Scrollama (guarded) ---
-    let scroller;
-    if (window.scrollama) {
-      scroller = scrollama();
-    } else {
-      // Fallback no-op scroller so the rest of the code doesn't crash
-      scroller = {
-        setup: () => ({ onStepEnter: () => ({}) }),
-        resize: () => {}
-      };
-      console.warn('scrollama niet geladen – fallback ingeschakeld.');
+    // ========= Error shielding =========
+    let SAFE_MODE = false;
+    const diag = (msg) => { const el = document.getElementById('diag-body'); if (el) { const p = document.createElement('div'); p.textContent = msg; el.appendChild(p);} console.log('[diag]', msg); };
+    function enableSafeMode(reason){ if (SAFE_MODE) return; SAFE_MODE = true; diag('SAFE_MODE enabled: ' + reason); }
+    window.addEventListener('error', (e)=>{ diag('Window error: ' + (e.message||'unknown')); enableSafeMode('window.error'); }, true);
+    window.addEventListener('unhandledrejection', (e)=>{ diag('Unhandled rejection'); enableSafeMode('unhandledrejection'); });
+
+    // ========= Utilities =========
+    const COLORS = ['#ffc87d','#c8e164','#4bafe1','#7d96e1','#87d278','#64c8c8','#967dc8','#c87dc8','#fa6432','#00283c'];
+    const hasD3 = () => typeof window.d3 !== 'undefined';
+    const hasSankey = () => hasD3() && typeof d3.sankey === 'function';
+
+    function clearVis(id){ const n = document.querySelector(id); if (!n) return; const svgs = n.querySelectorAll('svg, .fallback'); svgs.forEach(el=>el.remove()); }
+
+    // ========= SVG helpers for fallback =========
+    function svgEl(name, attrs={}){ const el = document.createElementNS('http://www.w3.org/2000/svg', name); for(const k in attrs){ el.setAttribute(k, attrs[k]); } return el; }
+    function mountSvg(container, w=800, h=500){ const svg = svgEl('svg', { viewBox:`0 0 ${w} ${h}`, width:'100%', height:'auto' }); container.appendChild(svg); return svg; }
+
+    // Donut fallback (pure SVG)
+    function drawDonutFallback(id, data){
+      const host = document.querySelector(id); if(!host) return; const w=420, h=420, cx=w/2, cy=h/2, r=180, ri=100; const total = data.reduce((a,b)=>a+b.value,0)||1; const svg = mountSvg(host, w, h);
+      let a0 = -Math.PI/2;
+      data.forEach((d,i)=>{
+        const a1 = a0 + 2*Math.PI*(d.value/total);
+        const p = donutSegPath(cx, cy, r, ri, a0, a1);
+        const path = svgEl('path', { d:p, fill: COLORS[i%COLORS.length] }); svg.appendChild(path);
+        // label
+        const am = (a0+a1)/2; const rx = (ri+r)/2; const lx = cx + Math.cos(am)*rx; const ly = cy + Math.sin(am)*rx;
+        const label = svgEl('text', { x: lx, y: ly, 'text-anchor':'middle', 'dominant-baseline':'middle', 'font-size':'12' });
+        label.textContent = `${d.label} (${Math.round(d.value/total*100)}%)`; svg.appendChild(label);
+        a0 = a1;
+      });
+    }
+    function donutSegPath(cx,cy,ro,ri,a0,a1){
+      const large = (a1-a0) > Math.PI ? 1 : 0;
+      const x0=cx+Math.cos(a0)*ro, y0=cy+Math.sin(a0)*ro;
+      const x1=cx+Math.cos(a1)*ro, y1=cy+Math.sin(a1)*ro;
+      const x2=cx+Math.cos(a1)*ri, y2=cy+Math.sin(a1)*ri;
+      const x3=cx+Math.cos(a0)*ri, y3=cy+Math.sin(a0)*ri;
+      return `M ${x0} ${y0} A ${ro} ${ro} 0 ${large} 1 ${x1} ${y1} L ${x2} ${y2} A ${ri} ${ri} 0 ${large} 0 ${x3} ${y3} Z`;
     }
 
-    function clearVis(id) { d3.select(id).selectAll('svg').remove(); }
-
-    // Secundaire kleuren volgens TM-palet voor grafieken
-    const TM_SECONDARY = [
-      '#ffc87d', '#c8e164', '#4bafe1', '#7d96e1', '#87d278', '#64c8c8', '#967dc8', '#c87dc8',
-      '#fa6432', /* oranje als accent */ '#00283c' /* blauw als accent */
-    ];
-
-    function isDarkSection(containerSelector){
-      const node = d3.select(containerSelector).node();
-      if(!node) return false;
-      const section = node.closest('section');
-      return section && section.classList.contains('dark');
+    // Treemap fallback: simple rectangle grid, width proportional to value
+    function drawTreemapFallback(id, data){
+      const host = document.querySelector(id); if(!host) return; const w=900, h=420; const total=data.reduce((a,b)=>a+b.value,0)||1; const svg=mountSvg(host,w,h); let x=10, y=10, rowH=110, gap=10, maxW=w-20;
+      data.forEach((d,i)=>{
+        const boxW = Math.max(60, Math.round((d.value/total) * (maxW - (data.length-1)*gap)));
+        if (x+boxW > maxW){ x=10; y+=rowH+gap; }
+        const rect = svgEl('rect', { x, y, width: boxW, height: rowH, rx: 6, fill: COLORS[i%COLORS.length] }); svg.appendChild(rect);
+        const label = svgEl('text', { x:x+8, y:y+24, 'font-size':'14', fill:'#000a1e' }); label.textContent = `${d.label} (${d.value})`; svg.appendChild(label);
+        x += boxW + gap;
+      });
     }
 
-    // Treemap
-    function drawTreemap(id, data) {
-      const width = 800, height = 500;
-      const svg = d3.select(id).append('svg').attr('viewBox', `0 0 ${width} ${height}`);
-      const color = d3.scaleOrdinal(TM_SECONDARY);
-      const root = d3.hierarchy({ children: data }).sum(d => d.value).sort((a,b)=>b.value-a.value);
-      d3.treemap().size([width, height]).padding(3)(root);
+    // Sankey fallback: straight-ish curves tussen links en rechts
+    function drawSankeyFallback(id, nodes, links){
+      const host = document.querySelector(id); if(!host) return; const w=1200, h=650; const svg=mountSvg(host,w,h);
+      const left = nodes.slice(0,3).map((n,i)=>({ name:n.name, side:'L', value:0, i }));
+      const right = nodes.slice(3).map((n,i)=>({ name:n.name, side:'R', value:0, i }));
+      links.forEach(l=>{ const src = left[l.source]; const tgt = right[l.target-3]; if (src) src.value += l.value; if (tgt) tgt.value += l.value; });
+      const nx=48, gap=28, top=40, bh= (h-top*2 - gap* (left.length-1)) / left.length;
+      const leftX=80, rightX=w-80-nx;
+      left.forEach((n,i)=>{ n.x=leftX; n.y=top+i*(bh+gap); n.h=Math.max(30, bh); });
+      right.forEach((n,i)=>{ n.x=rightX; n.y=top+i*(bh+gap); n.h=Math.max(30, bh); });
 
-      const nodes = svg.selectAll('g').data(root.leaves()).enter().append('g').attr('transform', d => `translate(${d.x0},${d.y0})`);
-      nodes.append('rect')
-        .attr('width', 0).attr('height', 0).attr('rx', 6)
-        .attr('fill', d => color(d.data.label))
-        .transition().duration(900)
-        .attr('width', d => d.x1 - d.x0).attr('height', d => d.y1 - d.y0);
+      [...left,...right].forEach((n,idx)=>{
+        const r = svgEl('rect',{ x:n.x, y:n.y, width:nx, height:n.h, rx:6, fill: COLORS[idx%COLORS.length] }); svg.appendChild(r);
+        const tx = n.side==='L'? n.x+nx+10 : n.x-10; const anchor = n.side==='L'? 'start' : 'end';
+        const t = svgEl('text',{ x:tx, y:n.y+n.h/2, 'text-anchor':anchor, 'dominant-baseline':'middle', 'font-size':'16', fill:'#000a1e' }); t.textContent = `${n.name}`; svg.appendChild(t);
+      });
 
-      nodes.append('text')
-        .attr('x', 8).attr('y', 20)
-        .attr('class', 'treemap-label chart-label')
-        .style('font-size', d => Math.min(16, Math.max(10, (d.x1 - d.x0) / 10)) + 'px')
-        .text(d => `${d.data.label} (${d.data.value})`)
-        .each(function(d){
-          const boxWidth = d.x1 - d.x0;
-          const textLength = this.getComputedTextLength();
-          if (textLength > boxWidth - 10) {
-            d3.select(this).attr('y', 14).text(`${d.data.label.split(' ')[0]}… (${d.data.value})`);
+      links.forEach((l,i)=>{
+        const s = left[l.source]; const t = right[l.target-3]; if(!s||!t) return; const sy = s.y + (s.h* (i+1)/(links.length+1)); const ty = t.y + (t.h* (i+1)/(links.length+1));
+        const d = `M ${s.x+nx} ${sy} C ${s.x+nx+180} ${sy}, ${t.x-180} ${ty}, ${t.x} ${ty}`;
+        const path = svgEl('path',{ d, fill:'none', stroke: COLORS[s.i%COLORS.length], 'stroke-width': Math.max(2, l.value), 'stroke-opacity': .6 }); svg.appendChild(path);
+      });
+    }
+
+    // ========= Safe wrappers =========
+    function drawTreemap(id, data){
+      try{
+        if (hasD3() && d3.hierarchy){
+          const width = 800, height = 500; const svg = d3.select(id).append('svg').attr('viewBox',`0 0 ${width} ${height}`);
+          const color = d3.scaleOrdinal(COLORS); const root = d3.hierarchy({ children:data }).sum(d=>d.value).sort((a,b)=>b.value-a.value);
+          d3.treemap().size([width,height]).padding(3)(root);
+          const g = svg.selectAll('g').data(root.leaves()).enter().append('g').attr('transform', d=>`translate(${d.x0},${d.y0})`);
+          g.append('rect').attr('width',0).attr('height',0).attr('rx',6).attr('fill', d=>color(d.data.label)).transition().duration(900).attr('width', d=>d.x1-d.x0).attr('height',d=>d.y1-d.y0);
+          g.append('text').attr('x',8).attr('y',20).style('font-size','12px').text(d=>`${d.data.label} (${d.data.value})`);
+        } else { drawTreemapFallback(id, data); }
+      }catch(err){ diag('Treemap error -> fallback'); drawTreemapFallback(id, data); }
+    }
+
+    function drawDonut(id, data){
+      try{
+        if (hasD3()){
+          const width=420, height=420, radius=Math.min(width,height)/2; const svg=d3.select(id).append('svg').attr('viewBox',`0 0 ${width} ${height}`).append('g').attr('transform',`translate(${width/2},${height/2})`);
+          const color=d3.scaleOrdinal(COLORS); const pie=d3.pie().sort(null).value(d=>d.value); const arc=d3.arc().innerRadius(radius*0.55).outerRadius(radius);
+          const arcs=svg.selectAll('path').data(pie(data)).enter().append('g');
+          arcs.append('path').attr('fill', d=>color(d.data.label)).transition().duration(900).attrTween('d', d=>{ const i=d3.interpolate({startAngle:0,endAngle:0}, d); return t=>arc(i(t)); });
+          const total=d3.sum(data, d=>d.value);
+          arcs.append('text').attr('transform', d=>`translate(${arc.centroid(d)})`).attr('text-anchor','middle').style('font-size','12px').text(d=>`${d.data.label} (${Math.round(d.data.value/total*100)}%)`);
+        } else { drawDonutFallback(id, data); }
+      }catch(err){ diag('Donut error -> fallback'); drawDonutFallback(id, data); }
+    }
+
+    function drawSankey(id, nodes, links){
+      try{
+        if (hasSankey()){
+          clearVis(id);
+          const host=document.querySelector(id);
+          const hostWidth=host?host.getBoundingClientRect().width:1200;
+          const width=Math.max(1100, Math.min(1600, hostWidth*0.98));
+          const height=Math.round(width*0.62);
+          const svg=d3.select(id).append('svg')
+            .attr('viewBox',`0 0 ${width} ${height}`)
+            .attr('preserveAspectRatio','xMidYMid meet')
+            .style('width','min(96vw, 1600px)')
+            .style('maxWidth','1600px')
+            .style('height','auto');
+          const color=d3.scaleOrdinal(COLORS);
+          const sankey=d3.sankey().nodeWidth(48).nodePadding(36).extent([[1,1],[width-1,height-6]]);
+          const graph=sankey({ nodes:nodes.map(d=>Object.assign({},d)), links:links.map(d=>Object.assign({},d))});
+          const node=svg.append('g').selectAll('rect').data(graph.nodes).join('rect')
+            .attr('x',d=>d.x0).attr('y',d=>(d.y0+d.y1)/2).attr('height',0)
+            .attr('width',d=>d.x1-d.x0).attr('rx',6).attr('fill', d=>color(d.name));
+          node.transition().duration(1100).attr('y',d=>d.y0).attr('height',d=>d.y1-d.y0);
+          const link=svg.append('g').attr('fill','none').selectAll('path').data(graph.links).join('path')
+            .attr('d', d3.sankeyLinkHorizontal())
+            .attr('stroke', d=>color(d.source.name)).attr('stroke-opacity', .6);
+          link.each(function(d){ const L=this.getTotalLength(); d3.select(this)
+            .attr('stroke-dasharray', `${L} ${L}`).attr('stroke-dashoffset', L).attr('stroke-width',1); });
+          link.transition().duration(1400).attr('stroke-dashoffset',0).attr('stroke-width', d=>Math.max(2,d.width));
+          svg.append('g').style('font','16px sans-serif').selectAll('text').data(graph.nodes).join('text')
+            .attr('x', d=>d.x0<width/2?d.x1+14:d.x0-14).attr('y', d=>(d.y1+d.y0)/2)
+            .attr('text-anchor', d=>d.x0<width/2?'start':'end')
+            .style('opacity',0).transition().delay(700).duration(600).style('opacity',1)
+            .tween('text', function(d){ const sel=d3.select(this); const v=+d.value||0; const i=d3.interpolateNumber(0,v); return t=> sel.text(`${d.name} (${Math.round(i(t))})`); });
+        } else { drawSankeyFallback(id, nodes, links); }
+      }catch(err){ diag('Sankey error -> fallback'); drawSankeyFallback(id, nodes, links); }
+    }
+
+    // ========= Wordcloud (safe) =========
+    const WORD_FREQUENCIES = { 'prompt':12, 'canvas':8, 'prompts':3, 'tips':5, 'guide':2, 'gids':2, 'context':4, "llm's":9, 'ideeën':6, 'starten':4, 'use cases':7, 'inspiratie':6, 'variëren':2, 'rollen':3, 'tools':5, 'modellen':5 };
+    const cloudEl = document.getElementById('wordcloud'); const bgEl = document.getElementById('wcBg'); const overlayEl = document.getElementById('finalOverlay');
+    let cloudBuilt=false, reachedFinal=false;
+    function buildCloudOnce(){ if (cloudBuilt) return; const entries=Object.entries(WORD_FREQUENCIES); entries.forEach(([word,freq])=>{ const span=document.createElement('span'); span.textContent=word; span.style.left=(Math.random()*90)+'%'; span.style.top=(Math.random()*90)+'%'; span.style.fontSize=(1 + (freq/12)*2)+'rem'; cloudEl.appendChild(span); }); cloudBuilt=true; }
+    function clearHighlights(){ cloudEl.querySelectorAll('span').forEach(s=>{ s.classList.remove('highlight'); s.classList.remove('dim'); }); }
+    function highlightKeywords(keysStr){ clearHighlights(); const keys=(keysStr||'').split(',').map(k=>k.trim().toLowerCase()).filter(Boolean); const spans=[...cloudEl.querySelectorAll('span')]; const hits=new Set(); spans.forEach(s=>{ const t=s.textContent.toLowerCase(); if (keys.some(k=>t.includes(k))) { s.classList.add('highlight'); hits.add(s);} }); spans.forEach(s=>{ if(!hits.has(s)) s.classList.add('dim'); }); }
+
+    // ========= Scroll/Reveal (zonder externe libs) =========
+    function inBand(rect, vh, topFrac=.7, bottomFrac=.3){ return rect.top < vh*topFrac && rect.bottom > vh*bottomFrac; }
+    function onScroll(){ const s6=document.getElementById('scene6'); const vh = window.innerHeight || document.documentElement.clientHeight; if (!s6) return; const r=s6.getBoundingClientRect(); const inViewport=(r.top<vh)&&(r.bottom>0); const sufficientlyInView=(r.top<vh*.35)&&(r.bottom>vh*.65);
+      if (!inViewport){ s6.classList.remove('wc-on'); cloudEl.classList.remove('active'); bgEl.classList.remove('active'); overlayEl.style.opacity=0; reachedFinal=false; return; }
+      if (sufficientlyInView && !reachedFinal){ buildCloudOnce(); s6.classList.add('wc-on'); bgEl.classList.add('active'); cloudEl.classList.add('active'); }
+    }
+    function onScrollQuotes(){ const steps=document.querySelectorAll('#scene6 .qstep'); const lead=document.querySelector('#scene6 .lead'); const finalStepEl=document.querySelector('#scene6 .qstep-final'); const vh=window.innerHeight||document.documentElement.clientHeight;
+      if (lead){ const lr=lead.getBoundingClientRect(); if (inBand(lr, vh, .85, .15)) lead.classList.add('shown'); }
+      steps.forEach(el=>{ const r=el.getBoundingClientRect(); if (inBand(r, vh)){ if (!el.classList.contains('shown')){ el.classList.add('shown'); highlightKeywords(el.getAttribute('data-keywords')||''); } } });
+      if (finalStepEl){ const fr=finalStepEl.getBoundingClientRect(); const finaleVisible=(fr.bottom < vh*.35); const s6=document.getElementById('scene6'); const sr=s6?s6.getBoundingClientRect():null; const s6Visible=!!sr && sr.top<vh && sr.bottom>0; if (reachedFinal && fr.top>vh*.8) reachedFinal=false; if (finaleVisible || (reachedFinal && s6Visible)){ reachedFinal=true; cloudEl.style.opacity=0; bgEl.style.opacity=0; overlayEl.style.opacity=1; } else if (s6Visible && !reachedFinal){ overlayEl.style.opacity=0; bgEl.style.opacity=1; cloudEl.style.opacity=1; } }
+    }
+
+    // IntersectionObserver reveal voor .hidden (bugfix: .add was afgebroken)
+    (function initReveal(){
+      const items=[...document.querySelectorAll('.hidden')];
+      if (!('IntersectionObserver' in window)){
+        setTimeout(()=> items.forEach(el=> el.classList.add('visible')), 400);
+        return;
+      }
+      const io=new IntersectionObserver((entries)=>{
+        entries.forEach(e=>{
+          if (e.isIntersecting){
+            e.target.classList.add('visible'); // <-- gefixt
+            io.unobserve(e.target);
           }
         });
-    }
-
-    // Donut
-    function drawDonut(id, data) {
-      const width = 420, height = 420, radius = Math.min(width, height) / 2;
-      const svg = d3.select(id).append('svg').attr('viewBox', `0 0 ${width} ${height}`)
-        .append('g').attr('transform', `translate(${width/2},${height/2})`);
-      const color = d3.scaleOrdinal(TM_SECONDARY);
-      const pie = d3.pie().sort(null).value(d => d.value);
-      const arc = d3.arc().innerRadius(radius*0.55).outerRadius(radius);
-      const arcs = svg.selectAll('path').data(pie(data)).enter().append('g');
-      arcs.append('path').attr('fill', d=>color(d.data.label)).transition().duration(900)
-        .attrTween('d', d => { const i=d3.interpolate({startAngle:0,endAngle:0},d); return t=>arc(i(t)); });
-
-      const total = d3.sum(data, d=>d.value);
-      const dark = isDarkSection(id);
-      arcs.append('text').attr('transform', d=>`translate(${arc.centroid(d)})`).attr('text-anchor','middle')
-        .style('font-size','12px').style('fill', dark ? '#ffffff' : '#000a1e')
-        .text(d=>`${d.data.label} (${Math.round(d.data.value/total*100)}%)`);
-    }
-
-    // Sankey
-    function drawSankey(id,nodes,links){
-      clearVis(id);
-      const host = d3.select(id).node();
-      const hostWidth = host ? host.getBoundingClientRect().width : 1200;
-      const width = Math.max(900, Math.min(1600, hostWidth));
-      const height = Math.round(width * 0.5);
-      const svg = d3.select(id).append('svg')
-        .attr('viewBox',`0 0 ${width} ${height}`)
-        .attr('preserveAspectRatio','xMidYMid meet')
-        .style('width','min(96vw, 1600px)')
-        .style('max-width','1600px');
-
-      const color=d3.scaleOrdinal(TM_SECONDARY);
-      const sankey=d3.sankey().nodeWidth(40).nodePadding(30).extent([[1,1],[width-1,height-6]]);
-      const graph=sankey({nodes:nodes.map(d=>Object.assign({},d)),links:links.map(d=>Object.assign({},d))});
-      const dark = isDarkSection(id);
-
-      // --- Animate nodes: grow from center line to full height ---
-      const node = svg.append('g').selectAll('rect').data(graph.nodes).join('rect')
-        .attr('x',d=>d.x0)
-        .attr('y',d=>(d.y0+d.y1)/2)           // start in the middle
-        .attr('height',0)                     // grow to full
-        .attr('width',d=>d.x1-d.x0)
-        .attr('rx',6)
-        .attr('fill',d=>color(d.name));
-
-      node.transition().duration(1100).ease(d3.easeCubicOut)
-        .attr('y',d=>d.y0)
-        .attr('height',d=>d.y1-d.y0);
-
-      // --- Animate links: draw all simultaneously and thicken to width ---
-      const linkG = svg.append('g').attr('fill','none');
-      const link = linkG.selectAll('path').data(graph.links).join('path')
-        .attr('d',d3.sankeyLinkHorizontal())
-        .attr('stroke',d=>color(d.source.name))
-        .attr('stroke-opacity',0.6);
-
-      // prepare path length + even reveal
-      link.each(function(d){
-        const totalLength = this.getTotalLength();
-        d3.select(this)
-          .attr('stroke-dasharray', `${totalLength} ${totalLength}`)
-          .attr('stroke-dashoffset', totalLength)
-          .attr('stroke-width', 1); // start thin
-      });
-
-      // animate all links uniformly over the same time => gelijkelijk opbouwen
-      link.transition().duration(1400).ease(d3.easeCubicOut)
-        .attr('stroke-dashoffset', 0)
-        .attr('stroke-width', d=>Math.max(1,d.width));
-
-      // Labels fade in after flows are visible
-      svg.append('g').style('font','16px sans-serif').selectAll('text').data(graph.nodes).join('text')
-        .attr('x',d=>d.x0<width/2?d.x1+10:d.x0-10)
-        .attr('y',d=>(d.y1+d.y0)/2)
-        .attr('text-anchor',d=>d.x0<width/2?'start':'end')
-        .style('fill', dark ? '#ffffff' : '#000a1e')
-        .style('opacity',0)
-        .transition().delay(700).duration(600)
-        .style('opacity',1)
-        .tween('text', function(d){
-          // optional: count up node value while labels fade in
-          const sel = d3.select(this);
-          const v = +d.value || 0;
-          const i = d3.interpolateNumber(0, v);
-          return function(t){ sel.text(`${d.name} (${Math.round(i(t))})`); };
-        });
-    }
-
-    // Wordcloud utils
-    if (window.gsap && window.ScrollTrigger) {
-      gsap.registerPlugin(ScrollTrigger);
-    } else {
-      console.warn('GSAP/ScrollTrigger niet geladen – gebruik fallback animaties.');
-    }
-    const WORD_FREQUENCIES = {
-      'prompt': 12, 'canvas': 8, 'prompts': 3, 'tips': 5, 'guide': 2, 'gids': 2,
-      'context': 4, "llm’s": 9, 'ideeën': 6, 'starten': 4, 'use cases': 7, 'inspiratie': 6,
-      'variëren': 2, 'rollen': 3, 'tools': 5, 'modellen': 5
-    };
-    const cloud = document.getElementById('wordcloud');
-    let cloudBuilt = false; let reachedFinal = false;
-
-    function buildCloudOnce() {
-      if (cloudBuilt) return;
-      Object.entries(WORD_FREQUENCIES).forEach(([word, freq]) => {
-        const span = document.createElement('span');
-        span.textContent = word;
-        span.style.left = Math.random() * 90 + '%';
-        span.style.top = Math.random() * 90 + '%';
-        const size = 1 + (freq / 12) * 2; span.style.fontSize = size + 'rem';
-        cloud.appendChild(span);
-      });
-      cloudBuilt = true;
-    }
-    function animateWord(el) { gsap.to(el, { x: 'random(-40, 40)', y: 'random(-40, 40)', opacity: 0.45 + Math.random() * 0.45, duration: 5 + Math.random() * 5, repeat: -1, yoyo: true, ease: 'sine.inOut' }); }
-    function explodeWords() {
-      const spans = document.querySelectorAll('.wordcloud span');
-      gsap.fromTo(spans, { scale: 0, opacity: 0, y: 100 }, { scale: 1, opacity: 1, y: 0, stagger: 0.03, ease: 'back.out(2)', duration: 1.2, onComplete: () => spans.forEach(s => animateWord(s)) });
-    }
-    function clearHighlights() { document.querySelectorAll('.wordcloud span').forEach(s => { s.classList.remove('highlight'); s.classList.remove('dim'); }); }
-    function highlightKeywords(keywordString) {
-      clearHighlights();
-      const keys = (keywordString || '').split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
-      const spans = Array.from(document.querySelectorAll('.wordcloud span'));
-      const hits = new Set();
-      spans.forEach(s => { const t = s.textContent.toLowerCase(); if (keys.some(k => t.includes(k))) { s.classList.add('highlight'); hits.add(s); } });
-      spans.forEach(s => { if (!hits.has(s)) s.classList.add('dim'); });
-      hits.forEach(h => { gsap.fromTo(h, { scale: 1.2 }, { scale: 1.8, duration: 0.4, yoyo: true, repeat: 1, ease: 'power2.out' }); });
-    }
-
-    // Fallbacks voor canvas preview
-    function maybeActivateCloudFallback() {
-      const s6 = document.getElementById('scene6'); if (!s6) return;
-      const r = s6.getBoundingClientRect(); const vh = window.innerHeight || document.documentElement.clientHeight;
-      const inViewport = (r.top < vh) && (r.bottom > 0);
-      const sufficientlyInView = (r.top < vh*0.35) && (r.bottom > vh*0.65);
-      const bg = document.getElementById('wcBg'); const wc = document.getElementById('wordcloud');
-
-      if (!inViewport) {
-        // Harde reset als scene6 niet zichtbaar is
-        s6.classList.remove('wc-on');
-        wc?.classList.remove('active');
-        bg?.classList.remove('active');
-        if (window.gsap) {
-          gsap.to('#wordcloud', { opacity: 0, duration: 0.15, overwrite: true });
-          gsap.to('#wcBg', { opacity: 0, duration: 0.15, overwrite: true });
-          gsap.to('#finalOverlay', { opacity: 0, duration: 0.15, overwrite: true });
-        } else {
-          // Zonder GSAP: direct reset
-          const el1 = document.getElementById('wordcloud'); const el2 = document.getElementById('wcBg'); const el3 = document.getElementById('finalOverlay');
-          if (el1) el1.style.opacity = 0; if (el2) el2.style.opacity = 0; if (el3) el3.style.opacity = 0;
-        }
-        reachedFinal = false;
-        return;
-      }
-
-      if (sufficientlyInView && !reachedFinal) {
-        buildCloudOnce();
-        s6.classList.add('wc-on');
-        if (bg && !bg.classList.contains('active')) bg.classList.add('active');
-        if (wc && !wc.classList.contains('active')) { wc.classList.add('active'); if (window.gsap) { explodeWords(); } }
-      } else if (!sufficientlyInView && !reachedFinal) {
-        s6.classList.remove('wc-on');
-        wc?.classList.remove('active');
-        bg?.classList.remove('active');
-        if (window.gsap) {
-          gsap.to('#wordcloud', { opacity: 0, duration: 0.2, overwrite: true });
-          gsap.to('#wcBg', { opacity: 0, duration: 0.2, overwrite: true });
-        } else {
-          const el1 = document.getElementById('wordcloud'); const el2 = document.getElementById('wcBg');
-          if (el1) el1.style.opacity = 0; if (el2) el2.style.opacity = 0;
-        }
-      }
-    }
-    function maybeRevealQuoteFallback() {
-      const steps = document.querySelectorAll('#scene6 .qstep'); const lead = document.querySelector('#scene6 .lead'); const finalStepEl = document.querySelector('#scene6 .qstep-final'); const vh = window.innerHeight || document.documentElement.clientHeight;
-      const inBand = (rect, topFrac = 0.7, bottomFrac = 0.3) => (rect.top < vh*topFrac && rect.bottom > vh*bottomFrac);
-      if (lead) { const lr = lead.getBoundingClientRect(); if (inBand(lr, 0.85, 0.15)) lead.classList.add('shown'); }
-      steps.forEach(el => { const r = el.getBoundingClientRect(); if (inBand(r)) { if (!el.classList.contains('shown')) { el.classList.add('shown'); const kw = el.getAttribute('data-keywords') || ''; if (window.gsap) highlightKeywords(kw); } } });
-      if (finalStepEl) {
-        const fr = finalStepEl.getBoundingClientRect(); const finaleVisible = (fr.bottom < vh * 0.35);
-        const s6 = document.getElementById('scene6'); const sr = s6 ? s6.getBoundingClientRect() : null; const s6Visible = !!sr && sr.top < vh && sr.bottom > 0;
-        if (reachedFinal && fr.top > vh*0.8) reachedFinal = false;
-        if (finaleVisible || (reachedFinal && s6Visible)) {
-          reachedFinal = true; if (window.gsap) { gsap.to('#wordcloud', { opacity: 0, duration: 0.4, ease: 'power2.out' }); gsap.to('#wcBg', { opacity: 0, duration: 0.4, ease: 'power2.out' }); gsap.to('#finalOverlay', { opacity: 1, duration: 0.6, ease: 'power2.out' }); } else { const el1 = document.getElementById('wordcloud'); const el2 = document.getElementById('wcBg'); const el3 = document.getElementById('finalOverlay'); if (el1) el1.style.opacity = 0; if (el2) el2.style.opacity = 0; if (el3) el3.style.opacity = 1; }
-        } else if (s6Visible && !reachedFinal) {
-          if (window.gsap) { gsap.to('#finalOverlay', { opacity: 0, duration: 0.3, ease: 'power2.out' }); gsap.to('#wcBg', { opacity: 1, duration: 0.3, ease: 'power2.out' }); gsap.to('#wordcloud', { opacity: 1, duration: 0.3, ease: 'power2.out' }); } else { const el3 = document.getElementById('finalOverlay'); if (el3) el3.style.opacity = 0; const el2 = document.getElementById('wcBg'); const el1 = document.getElementById('wordcloud'); if (el2) el2.style.opacity = 1; if (el1) el1.style.opacity = 1; }
-        }
-      }
-    }
-
-    // Reveal fallback voor alle .hidden elementen met IntersectionObserver
-    (function initRevealFallback(){
-      const items = Array.from(document.querySelectorAll('.hidden'));
-      if (!('IntersectionObserver' in window)) {
-        // Last resort: na 1s alles zichtbaar zodat je tenminste content ziet
-        setTimeout(() => items.forEach(el => el.classList.add('visible')), 1000);
-        return;
-      }
-      const io = new IntersectionObserver((entries)=>{
-        entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('visible'); io.unobserve(e.target); } });
-      }, { root: null, rootMargin: '0px', threshold: 0.2 });
-      items.forEach(el => io.observe(el));
+      }, { threshold:.2 });
+      items.forEach(el=> io.observe(el));
     })();
 
-    function setupScene6() {
-      ScrollTrigger.create({
-        trigger: '#scene6', start: 'top 70%', end: 'bottom top',
-        onEnter: () => { buildCloudOnce(); document.getElementById('scene6').classList.add('wc-on'); document.getElementById('wcBg').classList.add('active'); document.getElementById('wordcloud').classList.add('active'); explodeWords(); },
-        onLeave: () => { document.getElementById('scene6').classList.remove('wc-on'); document.getElementById('wordcloud').classList.remove('active'); document.getElementById('wcBg').classList.remove('active'); clearHighlights(); },
-        onEnterBack: () => { document.getElementById('scene6').classList.add('wc-on'); document.getElementById('wcBg').classList.add('active'); document.getElementById('wordcloud').classList.add('active'); },
-        onLeaveBack: () => { reachedFinal = false; document.getElementById('scene6').classList.remove('wc-on'); document.getElementById('wordcloud').classList.remove('active'); document.getElementById('wcBg').classList.remove('active'); clearHighlights(); }
-      });
-      const finalStep = document.querySelector('#scene6 .qstep-final');
-      if (finalStep) {
-        ScrollTrigger.create({
-          trigger: finalStep, start: 'bottom 65%', end: 'bottom top',
-          onEnter: () => { reachedFinal = true; gsap.to('#wordcloud', { opacity: 0, duration: 0.8, ease: 'power2.out' }); gsap.to('#wcBg', { opacity: 0, duration: 0.8, ease: 'power2.out' }); gsap.to('#finalOverlay', { opacity: 1, duration: 1.0, ease: 'power2.out' }); gsap.fromTo('#finalOverlay .final-quote span', { scale: 0.9 }, { scale: 1.05, yoyo: true, repeat: 1, duration: 0.8, ease: 'power2.inOut' }); },
-          onLeaveBack: () => { reachedFinal = false; gsap.to('#finalOverlay', { opacity: 0, duration: 0.5, ease: 'power2.out' }); gsap.to('#wordcloud', { opacity: 1, duration: 0.6, ease: 'power2.out' }); gsap.to('#wcBg', { opacity: 1, duration: 0.6, ease: 'power2.out' }); }
-        });
-      }
-      document.querySelectorAll('#scene6 .qstep').forEach(el => {
-        ScrollTrigger.create({
-          trigger: el, start: 'top 70%', end: 'bottom 60%',
-          onEnter: () => { gsap.to(el, { opacity: 1, y: 0, scale: 1, duration: 0.6, ease: 'power3.out' }); const kw = el.getAttribute('data-keywords') || ''; highlightKeywords(kw); },
-          onLeave: () => { gsap.to(el, { opacity: 0.35, duration: 0.3 }); },
-          onEnterBack: () => { gsap.to(el, { opacity: 1, y: 0, scale: 1, duration: 0.4, ease: 'power3.out' }); const kw = el.getAttribute('data-keywords') || ''; highlightKeywords(kw); },
-          onLeaveBack: () => { reachedFinal = false; gsap.to(el, { opacity: 0.35, duration: 0.3 }); }
-        });
-      });
-    }
+    // ========= Tekstanims per scene (GSAP indien beschikbaar) =========
+    function wrapWords(el){ if(!el || el.dataset.wrapped==='1') return []; const txt=el.innerHTML; const temp=document.createElement('div'); temp.innerHTML=txt; const spans=[]; (function walk(n){ if (n.nodeType===Node.TEXT_NODE){ const parts=n.textContent.split(/(\s+)/); const frag=document.createDocumentFragment(); parts.forEach(part=>{ if(/\s+/.test(part)) frag.appendChild(document.createTextNode(part)); else if(part.length){ const w=document.createElement('span'); w.className='w'; w.textContent=part; frag.appendChild(w); spans.push(w);} }); n.parentNode.replaceChild(frag,n); } else if (n.nodeType===Node.ELEMENT_NODE){ [...n.childNodes].forEach(walk);} })(temp); el.innerHTML=''; el.append(...[...temp.childNodes]); el.dataset.wrapped='1'; return spans; }
 
-    /* ----------------------------- */
-    /* Tekstanims per scene (variatie) */
-    /* ----------------------------- */
-    function wrapWords(el){
-      if(!el || el.dataset.wrapped === '1') return [];
-      const text = el.innerHTML;
-      // Split op spaties maar behoud HTML tags binnen <strong> enz.
-      // Eenvoudige aanpak: alleen buiten tags wrappen
-      const temp = document.createElement('div');
-      temp.innerHTML = text;
-      const spans = [];
-      function walker(node){
-        if(node.nodeType === Node.TEXT_NODE){
-          const parts = node.textContent.split(/(\s+)/);
-          const frag = document.createDocumentFragment();
-          parts.forEach(part => {
-            if(/\s+/.test(part)) { frag.appendChild(document.createTextNode(part)); }
-            else if(part.length){ const w = document.createElement('span'); w.className='w'; w.textContent = part; frag.appendChild(w); spans.push(w); }
-          });
-          node.parentNode.replaceChild(frag, node);
-        } else if(node.nodeType === Node.ELEMENT_NODE){ Array.from(node.childNodes).forEach(walker); }
-      }
-      Array.from(temp.childNodes).forEach(walker);
-      el.innerHTML = '';
-      el.append(...Array.from(temp.childNodes));
-      el.dataset.wrapped = '1';
-      return spans;
-    }
-
-    function animateTextForSection(section){
-      const id = section.id;
-      const title = section.querySelector('h1, h2');
-      const body = section.querySelector('.text p');
-
-      // Veiligheidsnet: als niets te animeren, stop
-      if(!title && !body) return;
-
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: section,
-          start: 'top 70%',
-          end: 'bottom top',
-          toggleActions: 'play reverse play reverse'
-        }
-      });
-
-      // Effect-variaties per scene
+    function animateTextForSection(section){ if (!window.gsap || !window.ScrollTrigger) return; const id=section.id; const title=section.querySelector('h1,h2'); const body=section.querySelector('.text p'); if (!title && !body) return; const tl=gsap.timeline({ scrollTrigger:{ trigger:section, start:'top 70%', end:'bottom top', toggleActions:'play reverse play reverse' }});
       switch(id){
-        case 'scene1':
-          if(title) tl.from(title, { x: -80, opacity: 0, skewX: 6, filter:'blur(6px)', duration: 0.8, ease: 'power3.out' });
-          if(body) tl.from(body, { y: 30, opacity: 0, duration: 0.7, ease: 'power2.out' }, '-=0.3');
-          break;
-        case 'scene2':
-          if(title) tl.from(title, { scale: 0.85, rotation: -2, opacity: 0, duration: 0.7, ease: 'back.out(1.4)' });
-          if(body){ const words = wrapWords(body); tl.from(words, { opacity: 0, x: 10, y: 8, stagger: 0.02, duration: 0.45, ease: 'power1.out' }, '-=0.2'); }
-          break;
-        case 'scene3':
-          if(title) tl.fromTo(title, { y: -60, opacity: 0, letterSpacing: '0.2em' }, { y: 0, opacity: 1, letterSpacing: '0em', duration: 0.75, ease: 'power3.out' });
-          if(body) tl.fromTo(body, { opacity: 0, filter: 'blur(12px)' }, { opacity: 1, filter: 'blur(0px)', duration: 0.7, ease: 'power2.out' }, '-=0.25');
-          break;
-        case 'scene4':
-          if(title){ title.classList.add('fx-underline'); tl.from(title, { y: 80, scale: 0.96, opacity: 0, duration: 0.8, ease: 'power3.out' })
-            .to(title, { backgroundSize: '100% 10%', duration: 0.6, ease: 'power2.out' }, '-=0.4'); }
-          if(body) tl.from(body, { x: -40, opacity: 0, duration: 0.65, ease: 'power2.out' }, '-=0.4');
-          break;
-        case 'scene5':
-          if(title) tl.from(title, { x: 80, opacity: 0, duration: 0.7, ease: 'power3.out' });
-          if(body){ const words = wrapWords(body); tl.from(words, { opacity: 0, y: 18, stagger: 0.018, duration: 0.4, ease: 'power1.out' }, '-=0.2'); }
-          break;
-        case 'scene6':
-          // Lead-tekst een zachte fade-up
-          const leadH = section.querySelector('.lead h2');
-          const leadP = section.querySelector('.lead p');
-          if(leadH) tl.from(leadH, { y: 30, opacity: 0, duration: 0.6, ease: 'power2.out' });
-          if(leadP) tl.from(leadP, { y: 24, opacity: 0, duration: 0.6, ease: 'power2.out' }, '-=0.3');
-          break;
-        default:
-          if(title) tl.from(title, { y: 40, opacity: 0, duration: 0.6, ease: 'power2.out' });
-          if(body) tl.from(body, { y: 20, opacity: 0, duration: 0.6, ease: 'power2.out' }, '-=0.3');
+        case 'scene1': if(title) tl.from(title,{ x:-80, opacity:0, skewX:6, filter:'blur(6px)', duration:.8, ease:'power3.out' }); if(body) tl.from(body,{ y:30, opacity:0, duration:.7, ease:'power2.out' }, '-=.3'); break;
+        case 'scene2': if(title) tl.from(title,{ scale:.85, rotation:-2, opacity:0, duration:.7, ease:'back.out(1.4)' }); if(body){ const words=wrapWords(body); tl.from(words,{ opacity:0, x:10, y:8, stagger:.02, duration:.45, ease:'power1.out' }, '-=.2'); } break;
+        case 'scene3': if(title) tl.fromTo(title,{ y:-60, opacity:0, letterSpacing:'0.2em' },{ y:0, opacity:1, letterSpacing:'0em', duration:.75, ease:'power3.out' }); if(body) tl.fromTo(body,{ opacity:0, filter:'blur(12px)' },{ opacity:1, filter:'blur(0px)', duration:.7, ease:'power2.out' }, '-=.25'); break;
+        case 'scene4': if(title){ tl.from(title,{ y:80, scale:.96, opacity:0, duration:.8, ease:'power3.out' }).to(title,{ backgroundSize:'100% 10%', duration:.6, ease:'power2.out' }, '-=.4'); } if(body) tl.from(body,{ x:-40, opacity:0, duration:.65, ease:'power2.out' }, '-=.4'); break;
+        case 'scene5': if(title) tl.from(title,{ x:80, opacity:0, duration:.7, ease:'power3.out' }); if(body){ const words=wrapWords(body); tl.from(words,{ opacity:0, y:18, stagger:.018, duration:.4, ease:'power1.out' }, '-=.2'); } break;
+        case 'scene6': const leadH=section.querySelector('.lead h2'); const leadP=section.querySelector('.lead p'); if(leadH) tl.from(leadH,{ y:30, opacity:0, duration:.6, ease:'power2.out' }); if(leadP) tl.from(leadP,{ y:24, opacity:0, duration:.6, ease:'power2.out' }, '-=.3'); break;
+        default: if(title) tl.from(title,{ y:40, opacity:0, duration:.6, ease:'power2.out' }); if(body) tl.from(body,{ y:20, opacity:0, duration:.6, ease:'power2.out' }, '-=.3');
       }
     }
 
-    // Init tekenen per scene met scrollama + tekstanimaties
-    window.addEventListener('scroll', maybeActivateCloudFallback, { passive: true });
-    window.addEventListener('resize', maybeActivateCloudFallback);
-    setTimeout(maybeActivateCloudFallback, 400);
-    window.addEventListener('scroll', maybeRevealQuoteFallback, { passive: true });
-    window.addEventListener('resize', maybeRevealQuoteFallback);
-    setTimeout(maybeRevealQuoteFallback, 500);
-
-    document.addEventListener('DOMContentLoaded', function() {
-      // Tekst-animaties voor alle scenes (alleen als GSAP beschikbaar)
-      if (window.gsap) {
-        document.querySelectorAll('section.step').forEach(animateTextForSection);
-      } else {
-        // Zonder GSAP: maak alle hidden elementen zichtbaar
-        document.querySelectorAll('.hidden').forEach(d => d.classList.add('visible'));
-      }
-
-      scroller.setup({ step: '.step', offset: 0.5 }).onStepEnter(resp => {
-        const el = resp.element; el.querySelectorAll('.hidden').forEach(d => d.classList.add('visible'));
-        if (!el.classList.contains('drawn')) {
-          if (el.id === 'scene1') drawTreemap('#vis1',[
-            {label:'Sylvester',value:28},{label:'TM Communicatie Jaar 1',value:40},{label:'Testlabo Gen AI on Target',value:32},
-            {label:'Roularta',value:18},{label:'DexVille / FCR Media',value:24},{label:'Dazzle Events',value:6},
-            {label:'The Oval Office',value:6},{label:'Ferm',value:47}
-          ]);
-          if (el.id === 'scene2') drawDonut('#vis2',[
-            {label:'Superfan',value:52},{label:'Maximalist',value:34},{label:'Observeerder',value:6},{label:'Underdog',value:5},{label:'Rebel',value:2}
-          ]);
-          if (el.id === 'scene3') drawDonut('#vis3',[
-            {label:'Comfortabel',value:3},{label:'Afwachtend',value:10},{label:'Onzeker',value:6}
-          ]);
-          if (el.id === 'scene4') drawSankey('#vis4',[
-            {name:'Comfortabel voor'},{name:'Afwachtend voor'},{name:'Onzeker voor'},{name:'Comfortabel na'},{name:'Afwachtend na'},{name:'Onzeker na'}],
-            [{source:0,target:3,value:2},{source:0,target:4,value:1},{source:1,target:3,value:5},{source:1,target:4,value:3},{source:1,target:5,value:2},{source:2,target:3,value:5},{source:2,target:4,value:2},{source:2,target:5,value:2}]
-          );
-          if (el.id === 'scene5') drawDonut('#vis5',[
-            {label:'3 sterren',value:11},{label:'4 sterren',value:29},{label:'5 sterren',value:21}
-          ]);
-          if (el.id === 'scene6') { if (window.gsap && window.ScrollTrigger) setupScene6(); }
+    // ========= Minimal step-meting (vervangt scrollama) =========
+    function setupSteps(){
+      const steps=[...document.querySelectorAll('section.step')];
+      const handleEnter=(el)=>{
+        el.querySelectorAll('.hidden').forEach(d=>d.classList.add('visible'));
+        if (!el.classList.contains('drawn')){
+          if (el.id==='scene1') drawTreemap('#vis1',[{label:'Sylvester',value:28},{label:'TM Communicatie Jaar 1',value:40},{label:'Testlabo Gen AI on Target',value:32},{label:'Roularta',value:18},{label:'DexVille / FCR Media',value:24},{label:'Dazzle Events',value:6},{label:'The Oval Office',value:6},{label:'Ferm',value:47}]);
+          if (el.id==='scene2') drawDonut('#vis2',[{label:'Superfan',value:52},{label:'Maximalist',value:34},{label:'Observeerder',value:6},{label:'Underdog',value:5},{label:'Rebel',value:2}]);
+          if (el.id==='scene3') drawDonut('#vis3',[{label:'Comfortabel',value:3},{label:'Afwachtend',value:10},{label:'Onzeker',value:6}]);
+          if (el.id==='scene4') drawSankey('#vis4',[{name:'Comfortabel voor'},{name:'Afwachtend voor'},{name:'Onzeker voor'},{name:'Comfortabel na'},{name:'Afwachtend na'},{name:'Onzeker na'}],[{source:0,target:3,value:2},{source:0,target:4,value:1},{source:1,target:3,value:5},{source:1,target:4,value:3},{source:1,target:5,value:2},{source:2,target:3,value:5},{source:2,target:4,value:2},{source:2,target:5,value:2}]);
+          if (el.id==='scene5') drawDonut('#vis5',[{label:'3 sterren',value:11},{label:'4 sterren',value:29},{label:'5 sterren',value:21}]);
+          if (el.id==='scene6' && window.gsap && window.ScrollTrigger){ setupScene6(); }
           el.classList.add('drawn');
         }
-      });
-      window.addEventListener('resize', scroller.resize);
+      };
+      if (!('IntersectionObserver' in window)){ steps.forEach(el=> handleEnter(el)); return; }
+      const io=new IntersectionObserver((entries)=>{ entries.forEach(e=>{ if (e.isIntersecting) handleEnter(e.target); }); }, { threshold:.5 });
+      steps.forEach(el=> io.observe(el));
+    }
+
+    function setupScene6(){ if (!window.gsap || !window.ScrollTrigger) return; gsap.registerPlugin(ScrollTrigger); ScrollTrigger.config({ autoRefreshEvents:"visibilitychange,DOMContentLoaded,load", ignoreMobileResize:true });
+      document.querySelectorAll('#scene6 .qstep').forEach(el=>{ ScrollTrigger.create({ trigger:el, start:'top 70%', end:'bottom 60%', onEnter:()=> gsap.to(el,{ opacity:1, y:0, scale:1, duration:.6, ease:'power3.out' }), onLeave:()=> gsap.to(el,{ opacity:.35, duration:.3 }), onEnterBack:()=> gsap.to(el,{ opacity:1, y:0, scale:1, duration:.4, ease:'power3.out' }), onLeaveBack:()=> gsap.to(el,{ opacity:.35, duration:.3 }) }); });
+    }
+
+    // ========= Self-tests =========
+    function runSelfTests(){ const out=[]; const T=(name,fn)=>{ try{ fn(); out.push(`✅ ${name}`);}catch(e){ out.push(`❌ ${name}: ${e && e.message ? e.message : 'error'}`);} };
+      // Test 1: donut render (safe wrapper)
+      T('Donut render (safe wrapper)', ()=>{ const test=document.createElement('div'); test.id='t1'; test.style.position='absolute'; test.style.left='-9999px'; document.body.appendChild(test); drawDonut('#t1',[{label:'A',value:1},{label:'B',value:1}]); if (!test.querySelector('svg')) throw new Error('no svg'); test.remove(); });
+      // Test 2: treemap render (safe wrapper)
+      T('Treemap render (safe wrapper)', ()=>{ const test=document.createElement('div'); test.id='t2'; test.style.position='absolute'; test.style.left='-9999px'; document.body.appendChild(test); drawTreemap('#t2',[{label:'A',value:2},{label:'B',value:1},{label:'C',value:1}]); if (!test.querySelector('svg')) throw new Error('no svg'); test.remove(); });
+      // Test 3: sankey render (safe wrapper)
+      T('Sankey render (safe wrapper)', ()=>{ const test=document.createElement('div'); test.id='t3'; test.style.position='absolute'; test.style.left='-9999px'; document.body.appendChild(test); drawSankey('#t3',[{name:'L1'},{name:'L2'},{name:'L3'},{name:'R1'},{name:'R2'},{name:'R3'}],[{source:0,target:3,value:1},{source:1,target:3,value:1},{source:2,target:4,value:1}]); if (!test.querySelector('svg')) throw new Error('no svg'); test.remove(); });
+      // Test 4: highlightKeywords werkt
+      T('Wordcloud highlight', ()=>{ cloudEl.innerHTML=''; const s1=document.createElement('span'); s1.textContent='prompt'; const s2=document.createElement('span'); s2.textContent='andere'; cloudEl.appendChild(s1); cloudEl.appendChild(s2); highlightKeywords('prompt'); if (!s1.classList.contains('highlight')) throw new Error('no highlight'); cloudEl.innerHTML=''; });
+      // Test 5: fallback sankey tekent paden
+      T('Sankey fallback paths', ()=>{ const test=document.createElement('div'); test.id='t5'; test.style.position='absolute'; test.style.left='-9999px'; document.body.appendChild(test); drawSankeyFallback('#t5',[{name:'A1'},{name:'A2'},{name:'A3'},{name:'B1'},{name:'B2'},{name:'B3'}],[{source:0,target:3,value:2},{source:1,target:4,value:3}]); if (!test.querySelector('path')) throw new Error('no path'); test.remove(); });
+      out.forEach(diag);
+    }
+
+    // ========= Init =========
+    document.addEventListener('DOMContentLoaded', ()=>{
+      if (window.gsap && window.ScrollTrigger){ document.querySelectorAll('section.step').forEach(animateTextForSection); }
+      setupSteps();
+      runSelfTests();
+      window.addEventListener('scroll', ()=>{ onScroll(); onScrollQuotes(); }, { passive:true });
+      setTimeout(()=>{ onScroll(); onScrollQuotes(); }, 300);
+      diag(`Lib load errors: ${(window.__LIB_ERRS||[]).join(', ') || 'none'}`);
     });
   </script>
 </body>
