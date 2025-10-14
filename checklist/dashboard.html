@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GenAI Implementatie Dashboard - Thomas More</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-orange: #FF6B35;
+            --dark-blue: #1B3A57;
+            --light-gray: #F5F7FA;
+            --medium-gray: #E2E8F0;
+            --text-dark: #2D3748;
+            --text-light: #718096;
+            --success-green: #48BB78;
+            --tech-teal: #4FD1C5;
+            --juridisch-purple: #9F7AEA;
+            --economisch-blue: #4299E1;
+            --creatief-pink: #ED64A6;
+            --onderwijs-yellow: #ECC94B;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: var(--text-dark);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .logo {
+            font-size: 32px;
+            font-weight: 800;
+            color: var(--primary-orange);
+        }
+
+        .header h1 {
+            font-size: 28px;
+            color: var(--dark-blue);
+            margin-bottom: 4px;
+        }
+
+        .header p {
+            color: var(--text-light);
+            font-size: 14px;
+        }
+
+        .overall-progress {
+            text-align: right;
+        }
+
+        .overall-progress-label {
+            font-size: 14px;
+            color: var(--text-light);
+            margin-bottom: 8px;
+        }
+
+        .overall-progress-bar {
+            width: 200px;
+            height: 12px;
+            background: var(--medium-gray);
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 4px;
+        }
+
+        .overall-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--success-green), var(--tech-teal));
+            transition: width 0.3s ease;
+        }
+
+        .overall-progress-text {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--dark-blue);
+        }
+
+        .phase-nav {
+            background: white;
+            border-radius: 16px;
+            padding: 8px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            gap: 8px;
+        }
+
+        .phase-btn {
+            flex: 1;
+            padding: 16px 24px;
+            border: none;
+            background: transparent;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-light);
+            position: relative;
+        }
+
+        .phase-btn:hover {
+            background: var(--light-gray);
+        }
+
+        .phase-btn.active {
+            background: var(--dark-blue);
+            color: white;
+            box-shadow: 0 4px 12px rgba(27, 58, 87, 0.3);
+        }
+
+        .phase-btn .phase-number {
+            display: block;
+            font-size: 12px;
+            opacity: 0.7;
+            margin-bottom: 4px;
+        }
+
+        .categories-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .category-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border-left: 4px solid var(--primary-orange);
+        }
+
+        .category-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+        }
+
+        .category-card.tech { border-left-color: var(--tech-teal); }
+        .category-card.juridisch { border-left-color: var(--juridisch-purple); }
+        .category-card.economisch { border-left-color: var(--economisch-blue); }
+        .category-card.creatief { border-left-color: var(--creatief-pink); }
+        .category-card.onderwijs { border-left-color: var(--onderwijs-yellow); }
+
+        .category-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .category-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            background: var(--light-gray);
+        }
+
+        .category-card.tech .category-icon { background: rgba(79, 209, 197, 0.2); }
+        .category-card.juridisch .category-icon { background: rgba(159, 122, 234, 0.2); }
+        .category-card.economisch .category-icon { background: rgba(66, 153, 225, 0.2); }
+        .category-card.creatief .category-icon { background: rgba(237, 100, 166, 0.2); }
+        .category-card.onderwijs .category-icon { background: rgba(236, 201, 75, 0.2); }
+
+        .category-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--dark-blue);
+            margin-bottom: 4px;
+        }
+
+        .category-subtitle {
+            font-size: 13px;
+            color: var(--text-light);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--medium-gray);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--success-green);
+            transition: width 0.3s ease;
+        }
+
+        .category-card.tech .progress-fill { background: var(--tech-teal); }
+        .category-card.juridisch .progress-fill { background: var(--juridisch-purple); }
+        .category-card.economisch .progress-fill { background: var(--economisch-blue); }
+        .category-card.creatief .progress-fill { background: var(--creatief-pink); }
+        .category-card.onderwijs .progress-fill { background: var(--onderwijs-yellow); }
+
+        .progress-text {
+            font-size: 14px;
+            color: var(--text-light);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .expand-icon {
+            font-size: 20px;
+            color: var(--text-light);
+            transition: transform 0.3s ease;
+        }
+
+        .category-card.expanded .expand-icon {
+            transform: rotate(180deg);
+        }
+
+        .checks-list {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+            margin-top: 16px;
+        }
+
+        .category-card.expanded .checks-list {
+            max-height: 1000px;
+        }
+
+        .check-item {
+            padding: 12px;
+            background: var(--light-gray);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .check-item:hover {
+            background: var(--medium-gray);
+            transform: translateX(4px);
+        }
+
+        .check-item.completed {
+            opacity: 0.7;
+        }
+
+        .checkbox {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--text-light);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.2s ease;
+        }
+
+        .check-item.completed .checkbox {
+            background: var(--success-green);
+            border-color: var(--success-green);
+        }
+
+        .checkbox::after {
+            content: '✓';
+            color: white;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .check-item.completed .checkbox::after {
+            opacity: 1;
+        }
+
+        .check-text {
+            flex: 1;
+            font-size: 14px;
+            color: var(--text-dark);
+        }
+
+        .info-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--primary-orange);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            flex-shrink: 0;
+            transition: all 0.2s ease;
+        }
+
+        .check-item:hover .info-icon {
+            transform: scale(1.1);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 800px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--light-gray);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: var(--text-dark);
+            transition: all 0.2s ease;
+        }
+
+        .modal-close:hover {
+            background: var(--medium-gray);
+            transform: rotate(90deg);
+        }
+
+        .modal-header {
+            margin-bottom: 24px;
+            padding-right: 40px;
+        }
+
+        .modal-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--dark-blue);
+            margin-bottom: 8px;
+        }
+
+        .modal-meta {
+            display: flex;
+            gap: 12px;
+            font-size: 14px;
+            color: var(--text-light);
+        }
+
+        .modal-tag {
+            padding: 4px 12px;
+            background: var(--light-gray);
+            border-radius: 4px;
+        }
+
+        .modal-body {
+            line-height: 1.8;
+            color: var(--text-dark);
+        }
+
+        .modal-body h3 {
+            font-size: 18px;
+            color: var(--dark-blue);
+            margin-top: 24px;
+            margin-bottom: 12px;
+        }
+
+        .modal-body p {
+            margin-bottom: 16px;
+        }
+
+        .modal-body ul {
+            margin-left: 20px;
+            margin-bottom: 16px;
+        }
+
+        .modal-body li {
+            margin-bottom: 8px;
+        }
+
+        .modal-actions {
+            margin-top: 32px;
+            display: flex;
+            gap: 12px;
+            padding-top: 24px;
+            border-top: 1px solid var(--medium-gray);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: var(--primary-orange);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #e65a2b;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: var(--light-gray);
+            color: var(--text-dark);
+        }
+
+        .btn-secondary:hover {
+            background: var(--medium-gray);
+        }
+
+        .quick-stats {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 24px;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--dark-blue);
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: var(--text-light);
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .overall-progress {
+                text-align: left;
+                width: 100%;
+            }
+
+            .overall-progress-bar {
+                width: 100%;
+            }
+
+            .phase-nav {
+                flex-direction: column;
+            }
+
+            .categories-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-title">
+                <div class="logo">THOMAS<br>MORE</div>
+                <div>
+                    <h1>GenAI Implementatie Dashboard</h1>
+                    <p>Expertisecentrum Duurzaam Ondernemen en Digitale Innovatie</p>
+                </div>
+            </div>
+            <div class="overall-progress">
+                <div class="overall-progress-label">Totale Voortgang</div>
+                <div class="overall-progress-bar">
+                    <div class="overall-progress-fill" id="overallProgressFill"></div>
+                </div>
+                <div class="overall-progress-text"><span id="overallProgressText">0</span>%</div>
+            </div>
+        </div>
+
+        <div class="phase-nav">
+            <button class="phase-btn active" data-phase="1">
+                <span class="phase-number">Fase 1</span>
+                EXPLORATIE & EXPERIMENTATIE
+            </button>
+            <button class="phase-btn" data-phase="2">
+                <span class="phase-number">Fase 2</span>
+                IMPLEMENTATIE & INTEGRATIE
+            </button>
+            <button class="phase-btn" data-phase="3">
+                <span class="phase-number">Fase 3</span>
+                TRANSFORMATIE & EXPANSIE
+            </button>
+        </div>
+
+        <div id="categoriesContainer" class="categories-grid"></div>
+
+        <div class="quick-stats">
+            <div class="stat">
+                <div class="stat-value" id="completedChecks">0</div>
+                <div class="stat-label">Checks Voltooid</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="totalChecks">0</div>
+                <div class="stat-label">Totaal Checks</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="currentPhase">1</div>
+                <div class="stat-label">Huidige Fase</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal()">×</button>
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTitle"></h2>
+                <div class="modal-meta">
+                    <span class="modal-tag" id="modalPhase"></span>
+                    <span class="modal-tag" id="modalCategory"></span>
+                </div>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+            <div class="modal-actions">
+                <button class="btn btn-primary" onclick="markComplete()">Markeer als Voltooid</button>
+                <button class="btn btn-secondary" onclick="closeModal()">Sluiten</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const data = {
+            phases: {
+                1: {
+                    name: "EXPLORATIE & EXPERIMENTATIE",
+                    categories: {
+                        tech: {
+                            name: "Technische Implementatie & Toepassingen",
+                            icon: "⚙️",
+                            checks: [
+                                { id: "t1_1", text: "Focus op off-the-shelf toepassingen", content: "Begin met bestaande, bewezen AI-tools die direct inzetbaar zijn zonder maatwerk development. Dit verlaagt de drempel en kosten voor eerste experimenten." },
+                                { id: "t1_2", text: "Breng datamatuuriteit in kaart", content: "Analyseer de kwaliteit, beschikbaarheid en structuur van je data. Dit vormt de basis voor realistische AI-toepassingen." },
+                                { id: "t1_3", text: "Identificeer en documenteer AI-systemen", content: "Maak een inventaris van alle AI-tools die al in gebruik zijn binnen de organisatie, inclusief wie ze gebruikt en waarvoor." }
+                            ]
+                        },
+                        juridisch: {
+                            name: "Juridische & Ethische Aspecten",
+                            icon: "⚖️",
+                            checks: [
+                                { id: "j1_1", text: "Bepaal de impact van de EU AI Act", content: "Onderzoek welke AI-systemen onder de EU AI Act vallen en wat de verplichtingen zijn voor jouw organisatie." },
+                                { id: "j1_2", text: "Neem richtlijnen aan", content: "Ontwikkel eerste beleidslijnen voor verantwoord AI-gebruik binnen je organisatie." },
+                                { id: "j1_3", text: "Deel AI systemen op in risicoklassificatie", content: "Categoriseer AI-toepassingen in risicoclasses (minimaal, beperkt, hoog, onaanvaardbaar) volgens EU AI Act." },
+                                { id: "j1_4", text: "Communiceer intern transparant over gebruik", content: "Informeer medewerkers open over welke AI-systemen worden gebruikt en met welk doel." }
+                            ]
+                        },
+                        economisch: {
+                            name: "Economische Impact & Bedrijfsstrategieën",
+                            icon: "💼",
+                            checks: [
+                                { id: "e1_1", text: "Analyseer het huidig organisatiemodel", content: "Evalueer je huidige bedrijfsprocessen en identificeer waar AI toegevoegde waarde kan bieden." },
+                                { id: "e1_2", text: "Laat ruimte voor experimenten", content: "Reserveer budget en tijd voor AI-experimenten zonder directe ROI-verwachting." },
+                                { id: "e1_3", text: "Ontwerp een AI-organisatiemodel en flexibele AI-strategie", content: "Bepaal hoe AI-initiatieven worden georganiseerd: centraal, decentraal of hybride." },
+                                { id: "e1_4", text: "Identificeer enkele use-cases", content: "Selecteer 2-3 concrete toepassingen om mee te starten die quick wins kunnen opleveren." },
+                                { id: "e1_5", text: "Start een concrete business case", content: "Werk één use-case uit met concrete doelen, kosten en verwachte baten." }
+                            ]
+                        },
+                        creatief: {
+                            name: "Creatieve Sector & Media",
+                            icon: "🎨",
+                            checks: [
+                                { id: "c1_1", text: "Waak over kwaliteit", content: "Stel kwaliteitscriteria op voor AI-gegenereerde content en zorg voor menselijke review." },
+                                { id: "c1_2", text: "Waak over creatieve authenticiteit", content: "Bewaar de unieke stem en stijl van je merk bij gebruik van AI-tools." },
+                                { id: "c1_3", text: "Stem tijdig af met de eindgebruiker", content: "Betrek doelgroepen vroeg in het proces bij AI-gedreven creatieve projecten." },
+                                { id: "c1_4", text: "Werk aan co-creatie mens-machine", content: "Positioneer AI als assistent van de creatieve professional, niet als vervanging." }
+                            ]
+                        },
+                        onderwijs: {
+                            name: "Onderwijs & AI-geletterdheid",
+                            icon: "🎓",
+                            checks: [
+                                { id: "o1_1", text: "Organiseer inspiratiesessies", content: "Organiseer kennismakingssessies over AI-mogelijkheden voor alle medewerkers." },
+                                { id: "o1_2", text: "Ondersteun via kennisdeling", content: "Creëer platforms voor medewerkers om AI-ervaringen en tips te delen." },
+                                { id: "o1_3", text: "Creëer bewustzijn", content: "Vergroot begrip van AI-basisconcepten, mogelijkheden en beperkingen." },
+                                { id: "o1_4", text: "Moedig gebruik aan", content: "Stimuleer actief experimenteren met AI-tools in een veilige omgeving." },
+                                { id: "o1_5", text: "Onboard een testgroep", content: "Start met een pilotgroep early adopters die anderen kunnen inspireren." }
+                            ]
+                        }
+                    }
+                },
+                2: {
+                    name: "IMPLEMENTATIE & INTEGRATIE",
+                    categories: {
+                        tech: {
+                            name: "Technische Implementatie & Toepassingen",
+                            icon: "⚙️",
+                            checks: [
+                                { id: "t2_1", text: "Gebruik AI op maat", content: "Ontwikkel of customizeer AI-oplossingen specifiek voor jouw organisatie." },
+                                { id: "t2_2", text: "Zet in op robuuste systemen", content: "Zorg voor stabiele, schaalbare AI-infrastructuur die geschikt is voor productieomgeving." },
+                                { id: "t2_3", text: "Start een use-case", content: "Implementeer je eerste volwaardige AI-toepassing in een operationeel proces." }
+                            ]
+                        },
+                        juridisch: {
+                            name: "Juridische & Ethische Aspecten",
+                            icon: "⚖️",
+                            checks: [
+                                { id: "j2_1", text: "Bepaal de risicostrategie van de organisatie", content: "Definieer hoeveel risico acceptabel is bij AI-implementaties en welke mitigaties nodig zijn." },
+                                { id: "j2_2", text: "Stel datamanagementregels op", content: "Creëer duidelijke protocollen voor dataverzameling, -opslag en -gebruik in AI-systemen." },
+                                { id: "j2_3", text: "Stel een communicatie- en veranderplan op", content: "Plan hoe je stakeholders informeert over AI-implementaties en veranderingen." },
+                                { id: "j2_4", text: "Ontwikkel een ethisch kader", content: "Formuleer ethische principes voor AI-gebruik specifiek voor jouw organisatie." },
+                                { id: "j2_5", text: "Communiceer extern transparant over gebruik", content: "Wees open naar klanten en partners over AI-inzet in producten en diensten." },
+                                { id: "j2_6", text: "Monitor juridische ontwikkelingen", content: "Volg actief nieuwe wetgeving en jurisprudentie rondom AI." }
+                            ]
+                        },
+                        economisch: {
+                            name: "Economische Impact & Bedrijfsstrategieën",
+                            icon: "💼",
+                            checks: [
+                                { id: "e2_1", text: "Valideer de business case", content: "Toets of de initiële business case nog klopt na eerste experimenten en pas aan waar nodig." },
+                                { id: "e2_2", text: "Prioritiseer use-cases", content: "Rangschik AI-toepassingen op basis van impact, haalbaarheid en strategische waarde." },
+                                { id: "e2_3", text: "Piloteer use-cases", content: "Test geselecteerde use-cases in gecontroleerde omgeving voor breed uitrollen." },
+                                { id: "e2_4", text: "Identificeer potentiële winsten", content: "Kwantificeer verwachte efficiëntiewinst, kostenbesparingen en omzetgroei." },
+                                { id: "e2_5", text: "Stel rollen en robuuste KPI's op", content: "Definieer meetbare doelstellingen en verantwoordelijkheden voor AI-initiatieven." },
+                                { id: "e2_6", text: "Valideer de impact (top-down en bottom-up)", content: "Meet zowel strategische als operationele effecten van AI-implementaties." },
+                                { id: "e2_7", text: "Ontwerp een helder AI beleid", content: "Formuleer duidelijk beleid over AI-gebruik, governance en besluitvorming." },
+                                { id: "e2_8", text: "Evalueer continu de doelstellingen", content: "Review regelmatig of AI-projecten nog aligned zijn met organisatiedoelen." },
+                                { id: "e2_9", text: "Integreer een beslissingorgaan", content: "Stel een AI-stuurgroep of board in voor strategische beslissingen." }
+                            ]
+                        },
+                        creatief: {
+                            name: "Creatieve Sector & Media",
+                            icon: "🎨",
+                            checks: [
+                                { id: "c2_1", text: "Voorzie een geleidelijke introductie en integratie", content: "Implementeer AI-tools stapsgewijs om creatieven tijd te geven zich aan te passen." },
+                                { id: "c2_2", text: "Bouw vertrouwen op", content: "Demonstreer de waarde van AI voor creatief werk door succesverhalen te delen." },
+                                { id: "c2_3", text: "Leg de eindverantwoordelijkheid bij de redacteur", content: "Houd mensen verantwoordelijk voor eindresultaat, ook bij AI-ondersteuning." }
+                            ]
+                        },
+                        onderwijs: {
+                            name: "Onderwijs & AI-geletterdheid",
+                            icon: "🎓",
+                            checks: [
+                                { id: "o2_1", text: "Investeer in kennisopbouw: opleiding en ad hoc", content: "Bied zowel formele trainingen als just-in-time learning aan." },
+                                { id: "o2_2", text: "Herdefinieer processen, rollen en functies", content: "Pas functieprofielen en werkprocessen aan rekening houdend met AI." },
+                                { id: "o2_3", text: "Train teams bij AI beoordeling/vermogen", content: "Ontwikkel skills om AI-output kritisch te evalueren." },
+                                { id: "o2_4", text: "Bied specialisaties aan", content: "Geef geïnteresseerde medewerkers mogelijkheid tot diepere AI-expertise." },
+                                { id: "o2_5", text: "Train op herkennen van misbruik of -informatie", content: "Leer teams deepfakes, bias en andere AI-risico's te identificeren." }
+                            ]
+                        }
+                    }
+                },
+                3: {
+                    name: "TRANSFORMATIE & EXPANSIE",
+                    categories: {
+                        tech: {
+                            name: "Technische Implementatie & Toepassingen",
+                            icon: "⚙️",
+                            checks: [
+                                { id: "t3_1", text: "Stem IT- en data-architectuur af op AI", content: "Optimaliseer je technische infrastructuur specifiek voor AI-workloads." },
+                                { id: "t3_2", text: "Volg waarderealisatie van use-cases op", content: "Monitor systematisch of AI-toepassingen de beoogde waarde opleveren." },
+                                { id: "t3_3", text: "Monitor adoptie", content: "Track hoeveel gebruikers AI-tools actief inzetten en identificeer barrières." }
+                            ]
+                        },
+                        juridisch: {
+                            name: "Juridische & Ethische Aspecten",
+                            icon: "⚖️",
+                            checks: [
+                                { id: "j3_1", text: "Zet in op betrouwbare fallback systemen", content: "Implementeer backup-oplossingen voor als AI-systemen falen." },
+                                { id: "j3_2", text: "Implementeer een risico- en controleraamwerk", content: "Bouw een structureel systeem voor AI-risicomanagement." },
+                                { id: "j3_3", text: "Volg betrouwbaarheid en veilig gebruik op", content: "Monitor continu de performance en veiligheid van AI-systemen." },
+                                { id: "j3_4", text: "Hou 'human in the loop' in stand", content: "Zorg dat kritieke beslissingen altijd menselijke controle behouden." },
+                                { id: "j3_5", text: "Hanteer een transparante bedrijfsethiek", content: "Communiceer helder over ethische uitgangspunten en dilemma's." }
+                            ]
+                        },
+                        economisch: {
+                            name: "Economische Impact & Bedrijfsstrategieën",
+                            icon: "💼",
+                            checks: [
+                                { id: "e3_1", text: "Bied verschillende ondersteuningsniveaus aan", content: "Creëer verschillende support-tiers voor AI-gebruikers afhankelijk van behoefte." },
+                                { id: "e3_2", text: "Zet de weike tegen AI ondersteun uit", content: "Analyseer weerstand tegen AI en pak oorzaken proactief aan." },
+                                { id: "e3_3", text: "Schaal individuele productiviteitswinst op", content: "Vertaal individuele efficiëntiewinst naar organisatiebrede impact." },
+                                { id: "e3_4", text: "Volg het gebruik van (gen)AI op", content: "Analyseer gebruiksdata om adoptie en waardecreatie te begrijpen." },
+                                { id: "e3_5", text: "Zorg voor doorlopende innovatie", content: "Blijf nieuwe AI-mogelijkheden verkennen en implementeren." },
+                                { id: "e3_6", text: "Expandeer via dienstverlening omtrent AI", content: "Ontwikkel AI-diensten voor externe klanten gebaseerd op interne expertise." }
+                            ]
+                        },
+                        creatief: {
+                            name: "Creatieve Sector & Media",
+                            icon: "🎨",
+                            checks: [
+                                { id: "c3_1", text: "Creëer nieuwe content", content: "Gebruik AI om geheel nieuwe contentformaten te ontwikkelen." },
+                                { id: "c3_2", text: "Zoek nieuwe toepassingen met AI", content: "Verken innovatieve creatieve toepassingen voorbij huidige use-cases." },
+                                { id: "c3_3", text: "Plaats menselijke expertise centraal", content: "Positioneer AI als enabler van menselijke creativiteit, niet als vervanging." },
+                                { id: "c3_4", text: "Verken het dienstverleningsmodel", content: "Ontwikkel nieuwe business modellen rond AI-gedreven creatieve diensten." }
+                            ]
+                        },
+                        onderwijs: {
+                            name: "Onderwijs & AI-geletterdheid",
+                            icon: "🎓",
+                            checks: [
+                                { id: "o3_1", text: "Behoud menselijke expertise", content: "Zorg dat kritieke kennis en vaardigheden behouden blijven naast AI-gebruik." },
+                                { id: "o3_2", text: "Volg impact en veranderingen op", content: "Monitor de effecten van AI op werkinhoud, rollen en organisatiecultuur." },
+                                { id: "o3_3", text: "Vier succes", content: "Vier en communiceer AI-successen om momentum te behouden." }
+                            ]
+                        }
+                    }
+                }
+            }
+        };
+
+        let currentPhase = 1;
+        let completedChecks = new Set(JSON.parse(localStorage.getItem('completedChecks') || '[]'));
+        let currentCheckId = null;
+
+        function init() {
+            loadPhase(currentPhase);
+            updateStats();
+            
+            document.querySelectorAll('.phase-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('.phase-btn').forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    currentPhase = parseInt(e.target.dataset.phase);
+                    loadPhase(currentPhase);
+                    updateStats();
+                });
+            });
+        }
+
+        function loadPhase(phaseNum) {
+            const phase = data.phases[phaseNum];
+            const container = document.getElementById('categoriesContainer');
+            container.innerHTML = '';
+
+            Object.entries(phase.categories).forEach(([key, category]) => {
+                const completedCount = category.checks.filter(c => completedChecks.has(c.id)).length;
+                const totalCount = category.checks.length;
+                const percentage = Math.round((completedCount / totalCount) * 100);
+
+                const card = document.createElement('div');
+                card.className = `category-card ${key}`;
+                card.innerHTML = `
+                    <div class="category-header">
+                        <div class="category-icon">${category.icon}</div>
+                        <div style="flex: 1;">
+                            <div class="category-title">${category.name}</div>
+                            <div class="category-subtitle">${category.checks.length} checks</div>
+                        </div>
+                        <div class="expand-icon">▼</div>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${percentage}%"></div>
+                    </div>
+                    <div class="progress-text">
+                        <span>${completedCount} van ${totalCount} voltooid</span>
+                        <span>${percentage}%</span>
+                    </div>
+                    <div class="checks-list">
+                        ${category.checks.map(check => `
+                            <div class="check-item ${completedChecks.has(check.id) ? 'completed' : ''}" data-check-id="${check.id}">
+                                <div class="checkbox"></div>
+                                <div class="check-text">${check.text}</div>
+                                <div class="info-icon">i</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+
+                card.querySelector('.category-header').addEventListener('click', () => {
+                    card.classList.toggle('expanded');
+                });
+
+                card.querySelectorAll('.check-item').forEach(item => {
+                    item.addEventListener('click', (e) => {
+                        if (e.target.classList.contains('checkbox')) {
+                            toggleCheck(item.dataset.checkId);
+                        } else {
+                            openModal(phaseNum, key, item.dataset.checkId);
+                        }
+                    });
+                });
+
+                container.appendChild(card);
+            });
+        }
+
+        function toggleCheck(checkId) {
+            if (completedChecks.has(checkId)) {
+                completedChecks.delete(checkId);
+            } else {
+                completedChecks.add(checkId);
+            }
+            localStorage.setItem('completedChecks', JSON.stringify([...completedChecks]));
+            loadPhase(currentPhase);
+            updateStats();
+        }
+
+        function openModal(phaseNum, categoryKey, checkId) {
+            currentCheckId = checkId;
+            const phase = data.phases[phaseNum];
+            const category = phase.categories[categoryKey];
+            const check = category.checks.find(c => c.id === checkId);
+
+            document.getElementById('modalTitle').textContent = check.text;
+            document.getElementById('modalPhase').textContent = phase.name;
+            document.getElementById('modalCategory').textContent = category.name;
+            document.getElementById('modalBody').innerHTML = `
+                <p>${check.content}</p>
+                <h3>Praktische Tips</h3>
+                <ul>
+                    <li>Begin klein en schaal op waar het werkt</li>
+                    <li>Betrek alle stakeholders vanaf het begin</li>
+                    <li>Documenteer learnings voor toekomstige projecten</li>
+                    <li>Meet resultaten en pas aan waar nodig</li>
+                </ul>
+                <h3>Veelvoorkomende Valkuilen</h3>
+                <ul>
+                    <li>Te grote ambities zonder proof of concept</li>
+                    <li>Onvoldoende aandacht voor change management</li>
+                    <li>Onderschatten van data quality requirements</li>
+                    <li>Gebrek aan executive sponsorship</li>
+                </ul>
+            `;
+
+            document.getElementById('modal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('active');
+            currentCheckId = null;
+        }
+
+        function markComplete() {
+            if (currentCheckId) {
+                completedChecks.add(currentCheckId);
+                localStorage.setItem('completedChecks', JSON.stringify([...completedChecks]));
+                loadPhase(currentPhase);
+                updateStats();
+                closeModal();
+            }
+        }
+
+        function updateStats() {
+            let totalChecks = 0;
+            Object.values(data.phases).forEach(phase => {
+                Object.values(phase.categories).forEach(category => {
+                    totalChecks += category.checks.length;
+                });
+            });
+
+            const completed = completedChecks.size;
+            const percentage = Math.round((completed / totalChecks) * 100);
+
+            document.getElementById('completedChecks').textContent = completed;
+            document.getElementById('totalChecks').textContent = totalChecks;
+            document.getElementById('currentPhase').textContent = currentPhase;
+            document.getElementById('overallProgressText').textContent = percentage;
+            document.getElementById('overallProgressFill').style.width = percentage + '%';
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('modal').addEventListener('click', (e) => {
+            if (e.target.id === 'modal') {
+                closeModal();
+            }
+        });
+
+        // Initialize
+        init();
+    </script>
+</body>
+</html>

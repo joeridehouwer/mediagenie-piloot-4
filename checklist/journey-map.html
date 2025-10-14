@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GenAI Implementatie Journey Map</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 10px;
+            overflow-x: hidden;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 20px;
+            padding: 10px;
+        }
+
+        .header h1 {
+            font-size: 1.8em;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .header .subtitle {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .container {
+            background: white;
+            border-radius: 15px;
+            padding: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        /* Desktop Grid View - always scale columns to fit */
+        .journey-map.grid-view {
+            display: block;
+        }
+
+        .map-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            padding: 10px 0;
+        }
+
+        .phase-header {
+            text-align: center;
+            padding: 20px 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1em;
+        }
+
+        .phase-header.phase-1 {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .phase-header.phase-2 {
+            background: linear-gradient(135deg, #764ba2 0%, #f093fb 100%);
+        }
+
+        .phase-header.phase-3 {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .category-cell {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 15px;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .category-cell.phase-1 {
+            background: linear-gradient(to bottom, rgba(102, 126, 234, 0.08), rgba(102, 126, 234, 0.03));
+            border-left: 3px solid #667eea;
+        }
+
+        .category-cell.phase-2 {
+            background: linear-gradient(to bottom, rgba(118, 75, 162, 0.08), rgba(118, 75, 162, 0.03));
+            border-left: 3px solid #764ba2;
+        }
+
+        .category-cell.phase-3 {
+            background: linear-gradient(to bottom, rgba(245, 87, 108, 0.08), rgba(245, 87, 108, 0.03));
+            border-left: 3px solid #f5576c;
+        }
+
+        /* View Mode Toggle */
+        .view-toggle {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 12px;
+        }
+
+        .view-btn {
+            padding: 10px 20px;
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .view-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+        }
+
+        .progress-bar {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .progress-text {
+            font-size: 1em;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .progress-track {
+            width: 100%;
+            height: 10px;
+            background: #e0e0e0;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 5px;
+            transition: width 0.5s ease;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .stat-box {
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 0.75em;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .phase-header {
+            text-align: center;
+            padding: 20px 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1em;
+        }
+
+        .phase-header.empty {
+            background: transparent;
+        }
+
+        .phase-title {
+            font-size: 1.3em;
+            margin-bottom: 5px;
+        }
+
+        .phase-subtitle {
+            font-size: 0.85em;
+            opacity: 0.9;
+        }
+
+        .category-label {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 15px;
+            background: white;
+            border-radius: 10px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            min-width: 0;
+        }
+
+        .category-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4em;
+            flex-shrink: 0;
+        }
+
+        .category-text {
+            font-size: 0.85em;
+            line-height: 1.35;
+            overflow-wrap: break-word;
+            word-wrap: break-word;
+        }
+
+        .checks-cell {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        /* Mobile Accordion View */
+        .journey-map.accordion-view {
+            display: block;
+        }
+
+        .journey-map.accordion-view .map-grid {
+            display: block;
+            min-width: auto;
+            padding: 0;
+        }
+
+        .accordion-section {
+            margin-bottom: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .accordion-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+        }
+
+        .accordion-header:hover {
+            opacity: 0.9;
+        }
+
+        .accordion-toggle {
+            font-size: 1.5em;
+            transition: transform 0.3s ease;
+        }
+
+        .accordion-section.open .accordion-toggle {
+            transform: rotate(180deg);
+        }
+
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .accordion-section.open .accordion-content {
+            max-height: 5000px;
+        }
+
+        .category-section {
+            padding: 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .category-section:last-child {
+            border-bottom: none;
+        }
+
+        .category-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .check-item {
+            background: white;
+            padding: 12px;
+            padding-right: 35px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            display: flex;
+            align-items: start;
+            gap: 10px;
+            font-size: 0.9em;
+            line-height: 1.5;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            margin-bottom: 8px;
+            position: relative;
+        }
+
+        .check-item::after {
+            content: '›';
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.5em;
+            color: #667eea;
+            opacity: 0.4;
+            transition: all 0.3s ease;
+        }
+
+        .check-item:hover::after {
+            opacity: 1;
+            right: 8px;
+        }
+
+        .check-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border-color: #667eea;
+        }
+
+        .check-item.completed {
+            background: #e8f5e9;
+            border-color: #4caf50;
+        }
+
+        .checkbox {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            flex-shrink: 0;
+            margin-top: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .checkbox:hover {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .check-item.completed .checkbox {
+            background: #4caf50;
+            border-color: #4caf50;
+        }
+
+        .check-item.completed .checkbox::after {
+            content: '✓';
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        /* Color scheme per category */
+        .tech { background: #e3f2fd; color: #1565c0; }
+        .legal { background: #f3e5f5; color: #6a1b9a; }
+        .business { background: #fff3e0; color: #e65100; }
+        .creative { background: #fce4ec; color: #c2185b; }
+        .education { background: #fff9c4; color: #f57f17; }
+
+        /* Side Panel */
+        .side-panel {
+            position: fixed;
+            right: -100%;
+            top: 0;
+            width: 100%;
+            height: 100vh;
+            background: white;
+            box-shadow: -5px 0 30px rgba(0,0,0,0.3);
+            transition: right 0.4s ease;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .side-panel.open {
+            right: 0;
+        }
+
+        .panel-header {
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .panel-header h1 {
+            font-size: 1.3em;
+            padding-right: 40px;
+            line-height: 1.4;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.5em;
+            transition: background 0.3s ease;
+        }
+
+        .close-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .panel-content {
+            padding: 20px;
+        }
+
+        .panel-content h2,
+        .panel-content h3 {
+            color: #667eea;
+            margin: 20px 0 15px 0;
+        }
+
+        .panel-content p,
+        .panel-content li {
+            line-height: 1.8;
+            color: #333;
+            margin-bottom: 12px;
+        }
+
+        .panel-content ul {
+            padding-left: 20px;
+        }
+
+        .panel-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9em;
+        }
+
+        /* Tablet and Desktop */
+        @media (min-width: 768px) {
+            body {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 2.5em;
+            }
+
+            .header .subtitle {
+                font-size: 1.1em;
+            }
+
+            .container {
+                padding: 30px;
+            }
+
+            .side-panel {
+                width: 600px;
+                right: -600px;
+            }
+
+            .panel-header {
+                padding: 30px;
+            }
+
+            .panel-header h1 {
+                font-size: 1.8em;
+            }
+
+            .panel-content {
+                padding: 30px;
+            }
+
+            .panel-meta {
+                flex-direction: row;
+                gap: 20px;
+            }
+
+            .stat-number {
+                font-size: 2em;
+            }
+
+            .stat-label {
+                font-size: 0.85em;
+            }
+
+            .view-toggle {
+                display: none;
+            }
+
+            .journey-map {
+                display: block !important;
+            }
+
+            .journey-map .accordion-section {
+                display: none;
+            }
+        }
+
+        @media (max-width: 767px) {
+            .journey-map.grid-view {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>
+            <span>MEDIAGENIE</span>
+            <span style="font-size: 0.5em; opacity: 0.8;">CHECKLIST</span>
+        </h1>
+        <div class="subtitle">Interactive Journey Map - GenAI Implementatie</div>
+    </div>
+
+    <div class="container">
+        <div class="progress-bar">
+            <div class="progress-text">Jouw Voortgang</div>
+            <div class="progress-track">
+                <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+            </div>
+            <div class="stats">
+                <div class="stat-box">
+                    <div class="stat-number" id="completedCount">0</div>
+                    <div class="stat-label">Voltooid</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number" id="totalCount">0</div>
+                    <div class="stat-label">Totaal</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number" id="percentageCount">0%</div>
+                    <div class="stat-label">%</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="journey-map grid-view">
+            <div class="map-grid" id="journeyMap"></div>
+        </div>
+
+        <div class="journey-map accordion-view" id="accordionView">
+            <!-- Accordion sections will be generated here -->
+        </div>
+    </div>
+
+    <div class="side-panel" id="sidePanel">
+        <div class="panel-header">
+            <button class="close-btn" onclick="closePanel()">×</button>
+            <h1 id="panelTitle"></h1>
+            <div class="panel-meta" id="panelMeta"></div>
+        </div>
+        <div class="panel-content" id="panelContent"></div>
+    </div>
+
+    <script>
+        const data = {
+            phases: [
+                {
+                    name: "Fase 1",
+                    title: "EXPLORATIE",
+                    subtitle: "& EXPERIMENTATIE"
+                },
+                {
+                    name: "Fase 2",
+                    title: "IMPLEMENTATIE",
+                    subtitle: "& INTEGRATIE"
+                },
+                {
+                    name: "Fase 3",
+                    title: "TRANSFORMATIE",
+                    subtitle: "& EXPANSIE"
+                }
+            ],
+            categories: [
+                {
+                    id: "tech",
+                    name: "TECHNISCHE IMPLEMENTATIE & TOEPASSINGEN",
+                    icon: "🔧",
+                    color: "tech",
+                    checks: [
+                        ["Focus op off-the-shelf toepassingen", "Breng datamaturiteit in kaart", "Identificeer en documenteer AI-systemen"],
+                        ["Gebruik AI op maat", "Zet in op robuuste systemen", "Start een use-case"],
+                        ["Stem IT- en data-architectuur af op AI", "Volg waarderealisatie van use-cases op", "Monitor adoptie"]
+                    ]
+                },
+                {
+                    id: "legal",
+                    name: "JURIDISCHE & ETHISCHE ASPECTEN",
+                    icon: "⚖️",
+                    color: "legal",
+                    checks: [
+                        ["Bepaal de impact van de EU AI Act", "Neem richtlijnen aan", "Deel AI systemen op in risicoclassificatie", "Communiceer intern transparant over gebruik"],
+                        ["Bepaal de risicostrategie van de organisatie", "Stel compliance- en datateamregels", "Stel een communicatie- en veranderplan op", "Ontwikkel een ethisch kader", "Communiceer extern transparant over gebruik", "Monitor juridische ontwikkelingen"],
+                        ["Zet in op betrouwbare fallback systemen", "Implementeer een risico- en controleraamwerk", "Volg betrouwbaarheid en veilig gebruik op", "Hou 'human in the loop'", "Hanteer een transparante bedrijfsethiek"]
+                    ]
+                },
+                {
+                    id: "business",
+                    name: "ECONOMISCHE IMPACT & BEDRIJFSSTRATEGIEËN",
+                    icon: "💼",
+                    color: "business",
+                    checks: [
+                        ["Analyseer het huidig organisatiemodel", "Laat ruimte voor experimenten", "Ontwerp een AI-organisatiemodel en flexibele AI-strategie", "Identificeer enkele use-cases", "Start een concrete business case"],
+                        ["Valideer de business case", "Prioriteer use-cases", "Piloteer use-cases", "Identificeer potentiële winsten", "Monitor en rapporteer en robuuste KPI's", "Valideer de impact (top-down en bottom-up)", "Ontwerp een helder AI beleid", "Evalueer continu de doelstellingen", "Integreer een beslissingsorgaan"],
+                        ["Bied verschillende ondersteuningsniveaus aan", "Schaal de welke mate van AI ondersteuning op", "Schaal individuele productiviteitswinsten op", "Volg het gebruik van (gen)AI op", "Monitor prestaties en impact", "Expandeer via dienstverlening omtrent AI"]
+                    ]
+                },
+                {
+                    id: "creative",
+                    name: "CREATIEVE SECTOR & MEDIA",
+                    icon: "🎨",
+                    color: "creative",
+                    checks: [
+                        ["Waak over kwaliteit", "Waak over creatieve authenticiteit", "Stem tijdig af met de eindgebruiker", "Werk aan co-creatie mens-machine"],
+                        ["Voorzie een geleidelijke introductie en integratie", "Bouw vertrouwen op", "Leg de eindverantwoordelijkheid bij de redacteur"],
+                        ["Creëer nieuwe content", "Zoek nieuwe talen met AI", "Plaats menselijke expertise centraal", "Verken het dienstverleningsmodel"]
+                    ]
+                },
+                {
+                    id: "education",
+                    name: "ONDERWIJS & AI-GELETTERDHEID",
+                    icon: "🎓",
+                    color: "education",
+                    checks: [
+                        ["Organiseer inspiratiesessies", "Ondersteun via kennisdeling", "Creëer bewustzijn", "Faciliteer peer learning", "Onboard een testgroep"],
+                        ["Investeer in kennisopbouw: opleiding en ad hoc", "Herdefinieer processen, rollen en functies", "Train teams bij AI beoordelingsvermogen", "Herken beperkingen van het AI-systeem", "Train op herkennen van misbruik of -informatie"],
+                        ["Behoud menselijke expertise", "Volg impact en veranderingen op", "Vier succes"]
+                    ]
+                }
+            ]
+        };
+
+        const detailedContent = {
+            default: {
+                intro: "Deze check helpt je organisatie bij de implementatie van GenAI. Klik op verschillende checks om meer informatie te ontdekken.",
+                content: `
+                    <h3>Waarom is dit belangrijk?</h3>
+                    <p>Deze stap is cruciaal voor een succesvolle GenAI implementatie. Het zorgt ervoor dat je organisatie goed voorbereid is en de juiste fundament legt voor toekomstige groei.</p>
+                    
+                    <h3>Wat moet je doen?</h3>
+                    <p>Volg de aanbevolen stappen en betrek de juiste stakeholders. Zorg voor duidelijke communicatie en documentatie van je voortgang.</p>
+                    
+                    <h3>Verwachte resultaat</h3>
+                    <p>Na het voltooien van deze check heb je een duidelijk beeld van de status en volgende stappen voor jouw organisatie.</p>
+                    
+                    <h3>Tips & Best Practices</h3>
+                    <ul>
+                        <li>Begin met een pilotproject</li>
+                        <li>Betrek eindgebruikers vanaf het begin</li>
+                        <li>Meet en monitor je voortgang continu</li>
+                        <li>Deel learnings binnen de organisatie</li>
+                    </ul>
+                `
+            }
+        };
+
+        let completedChecks = new Set();
+        
+        if (localStorage.getItem('completedChecks')) {
+            completedChecks = new Set(JSON.parse(localStorage.getItem('completedChecks')));
+        }
+
+        function renderGridView() {
+            const grid = document.getElementById('journeyMap');
+            grid.innerHTML = '';
+
+            // First row: Phase headers
+            data.phases.forEach((phase, phaseIndex) => {
+                const headerHtml = `
+                    <div class="phase-header phase-${phaseIndex + 1}">
+                        <div class="phase-title">${phase.title}</div>
+                        <div class="phase-subtitle">${phase.subtitle}</div>
+                    </div>
+                `;
+                grid.innerHTML += headerHtml;
+            });
+
+            // Then rows for each category
+            data.categories.forEach((category, catIndex) => {
+                // Create 3 cells (one per phase) for this category
+                data.phases.forEach((phase, phaseIndex) => {
+                    const checks = category.checks[phaseIndex];
+                    const cellHtml = `
+                        <div class="category-cell phase-${phaseIndex + 1}">
+                            <div class="category-label">
+                                <div class="category-icon ${category.color}">${category.icon}</div>
+                                <div class="category-text">${category.name}</div>
+                            </div>
+                            <div class="checks-cell">
+                                ${checks.map((check, checkIndex) => {
+                                    const checkId = `${catIndex}-${phaseIndex}-${checkIndex}`;
+                                    const isCompleted = completedChecks.has(checkId);
+                                    return `
+                                        <div class="check-item ${isCompleted ? 'completed' : ''}" 
+                                             onclick="openPanel('${checkId}', '${check.replace(/'/g, "\\'")}', '${category.name}', '${phase.name}')"
+                                             data-check-id="${checkId}">
+                                            <div class="checkbox" onclick="event.stopPropagation(); toggleCheck('${checkId}')"></div>
+                                            <span>${check}</span>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                    `;
+                    grid.innerHTML += cellHtml;
+                });
+            });
+        }
+
+        function renderAccordionView() {
+            const accordion = document.getElementById('accordionView');
+            accordion.innerHTML = '';
+
+            data.phases.forEach((phase, phaseIndex) => {
+                const sectionHtml = `
+                    <div class="accordion-section" data-phase="${phaseIndex}">
+                        <div class="accordion-header" onclick="toggleAccordion(${phaseIndex})">
+                            <div>
+                                <div style="font-size: 1.2em; margin-bottom: 5px;">${phase.title}</div>
+                                <div style="font-size: 0.85em; opacity: 0.9;">${phase.subtitle}</div>
+                            </div>
+                            <span class="accordion-toggle">▼</span>
+                        </div>
+                        <div class="accordion-content">
+                            ${data.categories.map((category, catIndex) => {
+                                const checks = category.checks[phaseIndex];
+                                return `
+                                    <div class="category-section">
+                                        <div class="category-header">
+                                            <div class="category-icon ${category.color}">${category.icon}</div>
+                                            <span>${category.name}</span>
+                                        </div>
+                                        ${checks.map((check, checkIndex) => {
+                                            const checkId = `${catIndex}-${phaseIndex}-${checkIndex}`;
+                                            const isCompleted = completedChecks.has(checkId);
+                                            return `
+                                                <div class="check-item ${isCompleted ? 'completed' : ''}" 
+                                                     onclick="openPanel('${checkId}', '${check.replace(/'/g, "\\'")}', '${category.name}', '${phase.name}')"
+                                                     data-check-id="${checkId}">
+                                                    <div class="checkbox" onclick="event.stopPropagation(); toggleCheck('${checkId}')"></div>
+                                                    <span>${check}</span>
+                                                </div>
+                                            `;
+                                        }).join('')}
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+                accordion.innerHTML += sectionHtml;
+            });
+
+            // Open first section by default
+            if (accordion.children.length > 0) {
+                accordion.children[0].classList.add('open');
+            }
+        }
+
+        function toggleAccordion(phaseIndex) {
+            const section = document.querySelector(`[data-phase="${phaseIndex}"]`);
+            section.classList.toggle('open');
+        }
+
+        function toggleCheck(checkId) {
+            const checkElements = document.querySelectorAll(`[data-check-id="${checkId}"]`);
+            
+            if (completedChecks.has(checkId)) {
+                completedChecks.delete(checkId);
+                checkElements.forEach(el => el.classList.remove('completed'));
+            } else {
+                completedChecks.add(checkId);
+                checkElements.forEach(el => el.classList.add('completed'));
+            }
+
+            localStorage.setItem('completedChecks', JSON.stringify([...completedChecks]));
+            updateProgress();
+        }
+
+        function openPanel(checkId, title, category, phase) {
+            const panel = document.getElementById('sidePanel');
+            const panelTitle = document.getElementById('panelTitle');
+            const panelMeta = document.getElementById('panelMeta');
+            const panelContent = document.getElementById('panelContent');
+
+            panelTitle.textContent = title;
+            panelMeta.innerHTML = `
+                <div class="meta-item">
+                    <strong>📍 Fase:</strong> ${phase}
+                </div>
+                <div class="meta-item">
+                    <strong>🏷️ Categorie:</strong> ${category}
+                </div>
+            `;
+            
+            panelContent.innerHTML = detailedContent.default.content;
+
+            panel.classList.add('open');
+        }
+
+        function closePanel() {
+            document.getElementById('sidePanel').classList.remove('open');
+        }
+
+        function updateProgress() {
+            const totalChecks = data.categories.reduce((sum, cat) => 
+                sum + cat.checks.reduce((s, phase) => s + phase.length, 0), 0
+            );
+            const completed = completedChecks.size;
+            const percentage = Math.round((completed / totalChecks) * 100);
+
+            document.getElementById('completedCount').textContent = completed;
+            document.getElementById('totalCount').textContent = totalChecks;
+            document.getElementById('percentageCount').textContent = percentage + '%';
+            document.getElementById('progressFill').style.width = percentage + '%';
+        }
+
+        // Initialize
+        renderGridView();
+        renderAccordionView();
+        updateProgress();
+
+        // Close panel when clicking outside
+        document.getElementById('sidePanel').addEventListener('click', (e) => {
+            if (e.target.id === 'sidePanel') {
+                closePanel();
+            }
+        });
+
+        // Handle keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closePanel();
+            }
+        });
+    </script>
+</body>
+</html>

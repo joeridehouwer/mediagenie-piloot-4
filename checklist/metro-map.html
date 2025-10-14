@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GenAI Implementatie Metro Map</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Johnston', 'Helvetica', 'Arial', sans-serif;
+            background: #f0f2f5;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .header {
+            background: white;
+            padding: 15px 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .logo span {
+            color: #FF6B35;
+        }
+
+        .progress-container {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .line-progress {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+        }
+
+        .line-progress-bar {
+            width: 60px;
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .line-progress-fill {
+            height: 100%;
+            transition: width 0.3s;
+        }
+
+        .map-container {
+            position: relative;
+            width: 100%;
+            height: calc(100vh - 70px);
+            overflow: auto;
+            background: #f0f2f5;
+            cursor: grab;
+        }
+
+        .map-container:active {
+            cursor: grabbing;
+        }
+
+        .metro-canvas {
+            position: relative;
+            width: 2400px;
+            height: 100%;
+            min-height: calc(100vh - 70px);
+            margin: 0;
+            padding-left: 250px;
+            transform-origin: top left;
+            transition: transform 0.3s ease;
+        }
+
+        /* Phase Zones */
+        .phase-zone {
+            position: absolute;
+            top: 0;
+            height: 100%;
+            border-right: 2px dashed #d0d0d0;
+        }
+
+        .phase-zone.fase1 {
+            left: 250px;
+            width: 550px;
+            background: #f0f2f5;
+        }
+
+        .phase-zone.fase2 {
+            left: 800px;
+            width: 750px;
+            background: #e8eaed;
+        }
+
+        .phase-zone.fase3 {
+            left: 1550px;
+            width: 900px;
+            background: #e0e2e5;
+            border-right: none;
+        }
+
+        .phase-header {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            z-index: 5;
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+
+        .phase-header:hover {
+            opacity: 0.7;
+        }
+
+        .phase-number {
+            font-size: 48px;
+            font-weight: bold;
+            color: #667eea;
+            opacity: 0.15;
+            line-height: 1;
+        }
+
+        .phase-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-top: 5px;
+        }
+
+        .phase-subtitle {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 3px;
+        }
+
+        /* SVG lines */
+        .lines-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .metro-line {
+            fill: none;
+            stroke-width: 8;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            opacity: 0.3;
+            transition: opacity 0.3s;
+        }
+
+        .metro-line.active {
+            opacity: 0.8;
+        }
+
+        .metro-line-progress {
+            fill: none;
+            stroke-width: 8;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            opacity: 0.9;
+        }
+
+        .metro-line.tech { stroke: #4CAF50; }
+        .metro-line.legal { stroke: #2196F3; }
+        .metro-line.business { stroke: #FF9800; }
+        .metro-line.creative { stroke: #9C27B0; }
+        .metro-line.education { stroke: #FF5722; }
+
+        .metro-line-progress.tech { stroke: #4CAF50; }
+        .metro-line-progress.legal { stroke: #2196F3; }
+        .metro-line-progress.business { stroke: #FF9800; }
+        .metro-line-progress.creative { stroke: #9C27B0; }
+        .metro-line-progress.education { stroke: #FF5722; }
+
+        /* Stations */
+        .station {
+            position: absolute;
+            cursor: pointer;
+            z-index: 10;
+        }
+
+        .station:hover {
+            z-index: 100;
+        }
+
+        .station-marker {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: white;
+            border: 5px solid var(--line-color);
+            position: relative;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+
+        .station:hover .station-marker {
+            width: 26px;
+            height: 26px;
+            border-width: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        .station.completed .station-marker {
+            background: var(--line-color);
+            border-color: var(--line-color);
+            box-shadow: 0 0 0 3px rgba(var(--line-color-rgb), 0.3);
+            width: 22px;
+            height: 22px;
+        }
+
+        .station.completed .station-marker::after {
+            content: '✓';
+            position: absolute;
+            color: white;
+            font-size: 13px;
+            font-weight: bold;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .station.completed:hover .station-marker {
+            width: 30px;
+            height: 30px;
+        }
+
+        .station.transfer .station-marker {
+            border: 5px solid #333;
+            background: white;
+        }
+
+        .station.transfer.completed .station-marker {
+            background: var(--line-color);
+        }
+
+        .station-label {
+            position: absolute;
+            background: transparent;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            white-space: nowrap;
+            pointer-events: none;
+            z-index: 20;
+            color: #2c3e50;
+        }
+
+        .station-label.top {
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .station-label.bottom {
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .station-label.left {
+            right: 30px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .station-label.right {
+            left: 30px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        /* Line name labels */
+        .line-name-label {
+            position: absolute;
+            background: var(--line-color);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            z-index: 15;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: flex-end;
+            text-align: right;
+            width: 230px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .line-name-label:hover {
+            transform: translateX(-5px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+        }
+
+        /* Info Panel */
+        .info-panel {
+            position: fixed;
+            right: -600px;
+            top: 0;
+            width: 600px;
+            height: 100vh;
+            background: white;
+            box-shadow: -5px 0 25px rgba(0,0,0,0.3);
+            transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .info-panel.active {
+            right: 0;
+        }
+
+        .panel-header {
+            background: var(--panel-color, #667eea);
+            color: white;
+            padding: 35px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .panel-close {
+            position: absolute;
+            top: 25px;
+            right: 25px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 28px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 300;
+        }
+
+        .panel-close:hover {
+            background: rgba(255,255,255,0.3);
+            transform: rotate(90deg);
+        }
+
+        .panel-title {
+            font-size: 26px;
+            font-weight: bold;
+            margin-bottom: 12px;
+            padding-right: 60px;
+            line-height: 1.3;
+        }
+
+        .panel-meta {
+            font-size: 14px;
+            opacity: 0.95;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .meta-tag {
+            background: rgba(255,255,255,0.2);
+            padding: 6px 14px;
+            border-radius: 15px;
+            font-weight: 500;
+            font-size: 13px;
+        }
+
+        .panel-content {
+            padding: 35px;
+        }
+
+        .content-section {
+            margin-bottom: 28px;
+        }
+
+        .content-section h3 {
+            color: #2c3e50;
+            margin-bottom: 14px;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .content-section h3::before {
+            content: '';
+            width: 4px;
+            height: 22px;
+            background: var(--panel-color, #667eea);
+            border-radius: 2px;
+        }
+
+        .content-section p {
+            line-height: 1.8;
+            color: #555;
+            margin-bottom: 14px;
+        }
+
+        .content-section ul {
+            margin-left: 20px;
+            color: #555;
+        }
+
+        .content-section li {
+            margin-bottom: 12px;
+            line-height: 1.7;
+        }
+
+        .action-box {
+            background: #f8f9fa;
+            padding: 22px;
+            border-radius: 12px;
+            border-left: 4px solid var(--panel-color, #667eea);
+            margin: 20px 0;
+        }
+
+        .checkpoint-box {
+            background: linear-gradient(135deg, #4CAF5015 0%, #4CAF5008 100%);
+            padding: 22px;
+            border-radius: 12px;
+            border: 2px solid #4CAF5030;
+            margin: 20px 0;
+        }
+
+        .checkpoint-box h3 {
+            color: #2c3e50;
+            font-size: 16px;
+            margin-bottom: 12px;
+        }
+
+        .checkbox-container {
+            background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+            padding: 22px;
+            border-radius: 12px;
+            margin-top: 30px;
+            border: 2px solid #667eea30;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            width: 26px;
+            height: 26px;
+            cursor: pointer;
+            accent-color: var(--panel-color, #667eea);
+        }
+
+        /* Controls */
+        .controls {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 14px 24px;
+            border-radius: 30px;
+            box-shadow: 0 6px 25px rgba(0,0,0,0.15);
+            display: flex;
+            gap: 12px;
+            z-index: 50;
+        }
+
+        .control-btn {
+            padding: 10px 20px;
+            border: none;
+            background: #667eea;
+            color: white;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .control-btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .control-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Color definitions */
+        .tech { --line-color: #4CAF50; --line-color-rgb: 76, 175, 80; }
+        .legal { --line-color: #2196F3; --line-color-rgb: 33, 150, 243; }
+        .business { --line-color: #FF9800; --line-color-rgb: 255, 152, 0; }
+        .creative { --line-color: #9C27B0; --line-color-rgb: 156, 39, 176; }
+        .education { --line-color: #FF5722; --line-color-rgb: 255, 87, 34; }
+
+        @media (max-width: 768px) {
+            .info-panel {
+                width: 100%;
+                right: -100%;
+            }
+            
+            .controls {
+                flex-wrap: wrap;
+                width: 90%;
+            }
+            
+            .progress-container {
+                flex-direction: column;
+                gap: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">MEDIA<span>GENIE</span></div>
+        <div class="progress-container" id="progressContainer"></div>
+    </div>
+
+    <div class="map-container" id="mapContainer">
+        <div class="metro-canvas" id="metroCanvas">
+            <div class="phase-zone fase1">
+                <div class="phase-header" onclick="zoomToPhase(1)">
+                    <div class="phase-number">01</div>
+                    <div class="phase-title">Exploratie &</div>
+                    <div class="phase-subtitle">Experimentatie</div>
+                </div>
+            </div>
+            <div class="phase-zone fase2">
+                <div class="phase-header" onclick="zoomToPhase(2)">
+                    <div class="phase-number">02</div>
+                    <div class="phase-title">Implementatie &</div>
+                    <div class="phase-subtitle">Integratie</div>
+                </div>
+            </div>
+            <div class="phase-zone fase3">
+                <div class="phase-header" onclick="zoomToPhase(3)">
+                    <div class="phase-number">03</div>
+                    <div class="phase-title">Transformatie &</div>
+                    <div class="phase-subtitle">Expansie</div>
+                </div>
+            </div>
+
+            <svg class="lines-layer" id="linesLayer"></svg>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button class="control-btn" onclick="zoomIn()">🔍 Zoom +</button>
+        <button class="control-btn" onclick="zoomOut()">🔍 Zoom −</button>
+        <button class="control-btn" onclick="resetView()">↺ Reset View</button>
+    </div>
+
+    <div class="info-panel" id="infoPanel">
+        <div class="panel-header" id="panelHeader">
+            <button class="panel-close" onclick="closePanel()">×</button>
+            <div class="panel-title" id="panelTitle">Station Info</div>
+            <div class="panel-meta" id="panelMeta"></div>
+        </div>
+        <div class="panel-content" id="panelContent">
+            <p>Klik op een station om meer informatie te zien.</p>
+        </div>
+    </div>
+
+    <script>
+        const metroData = {
+            lines: {
+                tech: {
+                    name: 'Technische Implementatie',
+                    color: '#4CAF50',
+                    icon: '🔧',
+                    path: [
+                        {x: 300, y: 200, id: 't1-1', title: 'Off-the-shelf', label: 'top', phase: 1},
+                        {x: 450, y: 220, id: 't1-2', title: 'Datamaturiteit', label: 'top', phase: 1},
+                        {x: 620, y: 200, id: 't1-3', title: 'Identificeer AI-systemen', label: 'top', phase: 1},
+                        {x: 900, y: 280, id: 't2-1', title: 'AI op maat', label: 'bottom', phase: 2},
+                        {x: 1080, y: 300, id: 't2-2', title: 'Robuuste systemen', label: 'bottom', phase: 2, transfer: true},
+                        {x: 1250, y: 280, id: 't2-3', title: 'Start use-case', label: 'bottom', phase: 2},
+                        {x: 1580, y: 220, id: 't3-1', title: 'IT-architectuur', label: 'top', phase: 3},
+                        {x: 1760, y: 200, id: 't3-2', title: 'Waarderealisatie', label: 'top', phase: 3},
+                        {x: 1940, y: 220, id: 't3-3', title: 'Monitor adoptie', label: 'top', phase: 3}
+                    ]
+                },
+                business: {
+                    name: 'Economische Impact',
+                    color: '#FF9800',
+                    icon: '💼',
+                    path: [
+                        {x: 300, y: 380, id: 'b1-1', title: 'Organisatiemodel', label: 'bottom', phase: 1},
+                        {x: 400, y: 400, id: 'b1-2', title: 'Experimenteren', label: 'bottom', phase: 1},
+                        {x: 490, y: 380, id: 'b1-3', title: 'AI-organisatiemodel', label: 'bottom', phase: 1},
+                        {x: 580, y: 360, id: 'b1-4', title: 'Use-cases', label: 'top', phase: 1},
+                        {x: 670, y: 380, id: 'b1-5', title: 'Business case', label: 'bottom', phase: 1},
+                        {x: 820, y: 360, id: 'b2-1', title: 'Valideer', label: 'top', phase: 2},
+                        {x: 910, y: 340, id: 'b2-2', title: 'Prioriteer', label: 'top', phase: 2},
+                        {x: 990, y: 320, id: 'b2-3', title: 'Piloteer', label: 'top', phase: 2},
+                        {x: 1080, y: 340, id: 'b2-4', title: 'Realiseer winsten', label: 'bottom', phase: 2, transfer: true},
+                        {x: 1160, y: 360, id: 'b2-5', title: 'KPIs', label: 'bottom', phase: 2},
+                        {x: 1240, y: 340, id: 'b2-6', title: 'Valideer impact', label: 'top', phase: 2},
+                        {x: 1330, y: 360, id: 'b2-7', title: 'AI-beleid', label: 'bottom', phase: 2},
+                        {x: 1410, y: 380, id: 'b2-8', title: 'Evalueer', label: 'bottom', phase: 2},
+                        {x: 1480, y: 360, id: 'b2-9', title: 'Beslissingorgaan', label: 'top', phase: 2},
+                        {x: 1600, y: 380, id: 'b3-1', title: 'Ondersteuning', label: 'bottom', phase: 3},
+                        {x: 1690, y: 360, id: 'b3-2', title: 'Pas aan', label: 'top', phase: 3},
+                        {x: 1780, y: 380, id: 'b3-3', title: 'Schaal op', label: 'bottom', phase: 3},
+                        {x: 1870, y: 360, id: 'b3-4', title: 'Monitor gebruik', label: 'top', phase: 3},
+                        {x: 1960, y: 380, id: 'b3-5', title: 'Ecosysteem', label: 'bottom', phase: 3},
+                        {x: 2050, y: 400, id: 'b3-6', title: 'Dienstverlening', label: 'bottom', phase: 3}
+                    ]
+                },
+                legal: {
+                    name: 'Juridische Aspecten',
+                    color: '#2196F3',
+                    icon: '⚖️',
+                    path: [
+                        {x: 300, y: 540, id: 'l1-1', title: 'EU AI Act', label: 'bottom', phase: 1},
+                        {x: 430, y: 520, id: 'l1-2', title: 'Richtlijnen', label: 'top', phase: 1},
+                        {x: 550, y: 540, id: 'l1-3', title: 'Risicoklasse', label: 'bottom', phase: 1},
+                        {x: 670, y: 520, id: 'l1-4', title: 'Intern transparant', label: 'top', phase: 1},
+                        {x: 840, y: 500, id: 'l2-1', title: 'Risicostrategie', label: 'top', phase: 2},
+                        {x: 950, y: 480, id: 'l2-2', title: 'Doelstellingen', label: 'top', phase: 2},
+                        {x: 1050, y: 500, id: 'l2-3', title: 'Veranderplan', label: 'bottom', phase: 2},
+                        {x: 1150, y: 520, id: 'l2-4', title: 'Ethisch kader', label: 'bottom', phase: 2},
+                        {x: 1250, y: 500, id: 'l2-5', title: 'Extern communiceren', label: 'top', phase: 2},
+                        {x: 1350, y: 520, id: 'l2-6', title: 'Monitor juridisch', label: 'bottom', phase: 2},
+                        {x: 1580, y: 540, id: 'l3-1', title: 'Fallback systemen', label: 'bottom', phase: 3},
+                        {x: 1710, y: 520, id: 'l3-2', title: 'Risico-raamwerk', label: 'top', phase: 3},
+                        {x: 1840, y: 540, id: 'l3-3', title: 'Monitor betrouwbaar', label: 'bottom', phase: 3},
+                        {x: 1960, y: 520, id: 'l3-4', title: 'Human in loop', label: 'top', phase: 3},
+                        {x: 2080, y: 540, id: 'l3-5', title: 'Transparante ethiek', label: 'bottom', phase: 3}
+                    ]
+                },
+                creative: {
+                    name: 'Creatieve Sector',
+                    color: '#9C27B0',
+                    icon: '🎨',
+                    path: [
+                        {x: 300, y: 710, id: 'c1-1', title: 'Kwaliteit', label: 'bottom', phase: 1},
+                        {x: 440, y: 690, id: 'c1-2', title: 'Authenticiteit', label: 'top', phase: 1},
+                        {x: 570, y: 710, id: 'c1-3', title: 'Stem af', label: 'bottom', phase: 1},
+                        {x: 690, y: 690, id: 'c1-4', title: 'Co-creatie', label: 'top', phase: 1},
+                        {x: 880, y: 710, id: 'c2-1', title: 'Geleidelijke introductie', label: 'bottom', phase: 2},
+                        {x: 1070, y: 720, id: 'c2-2', title: 'Bouw vertrouwen', label: 'bottom', phase: 2, transfer: true},
+                        {x: 1280, y: 710, id: 'c2-3', title: 'Eindverantwoordelijk', label: 'bottom', phase: 2},
+                        {x: 1620, y: 690, id: 'c3-1', title: 'Nieuwe content', label: 'top', phase: 3},
+                        {x: 1800, y: 710, id: 'c3-2', title: 'Strategische kansen', label: 'bottom', phase: 3},
+                        {x: 1960, y: 690, id: 'c3-3', title: 'Menselijke expertise', label: 'top', phase: 3},
+                        {x: 2120, y: 710, id: 'c3-4', title: 'Dienstverleningsmodel', label: 'bottom', phase: 3}
+                    ]
+                },
+                education: {
+                    name: 'Onderwijs & AI-geletterdheid',
+                    color: '#FF5722',
+                    icon: '🎓',
+                    path: [
+                        {x: 300, y: 900, id: 'e1-1', title: 'Inspiratiesessies', label: 'bottom', phase: 1},
+                        {x: 410, y: 880, id: 'e1-2', title: 'Kennisdeling', label: 'top', phase: 1},
+                        {x: 520, y: 900, id: 'e1-3', title: 'Bewustzijn', label: 'bottom', phase: 1},
+                        {x: 620, y: 880, id: 'e1-4', title: 'Enthousiasme', label: 'top', phase: 1},
+                        {x: 710, y: 900, id: 'e1-5', title: 'Testgroep', label: 'bottom', phase: 1},
+                        {x: 860, y: 870, id: 'e2-1', title: 'Kennisopbouw', label: 'top', phase: 2},
+                        {x: 970, y: 830, id: 'e2-2', title: 'Herdefinieer', label: 'top', phase: 2},
+                        {x: 1070, y: 790, id: 'e2-3', title: 'Train beoordeling', label: 'top', phase: 2, transfer: true},
+                        {x: 1170, y: 830, id: 'e2-4', title: 'Train prompting', label: 'bottom', phase: 2},
+                        {x: 1280, y: 870, id: 'e2-5', title: 'Herken misbruik', label: 'bottom', phase: 2},
+                        {x: 1600, y: 890, id: 'e3-1', title: 'Behoud expertise', label: 'bottom', phase: 3},
+                        {x: 1820, y: 870, id: 'e3-2', title: 'Volg impact op', label: 'top', phase: 3},
+                        {x: 2040, y: 890, id: 'e3-3', title: 'Vier succes', label: 'bottom', phase: 3}
+                    ]
+                }
+            }
+        };
+
+        let completedStations = new Set(JSON.parse(localStorage.getItem('completedStations') || '[]'));
+        let scale = 1;
+
+        function drawMetroLines() {
+            const svg = document.getElementById('linesLayer');
+            
+            Object.entries(metroData.lines).forEach(([lineId, lineData]) => {
+                const fullPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                let d = `M ${lineData.path[0].x} ${lineData.path[0].y}`;
+                
+                for (let i = 1; i < lineData.path.length; i++) {
+                    const curr = lineData.path[i];
+                    const prev = lineData.path[i - 1];
+                    const controlX = prev.x + (curr.x - prev.x) * 0.5;
+                    const controlY = prev.y + (curr.y - prev.y) * 0.5;
+                    d += ` Q ${controlX} ${controlY}, ${curr.x} ${curr.y}`;
+                }
+                
+                fullPath.setAttribute('d', d);
+                fullPath.setAttribute('class', `metro-line ${lineId}`);
+                svg.appendChild(fullPath);
+
+                updateLineProgress(lineId, lineData);
+            });
+        }
+
+        function updateLineProgress(lineId, lineData) {
+            const svg = document.getElementById('linesLayer');
+            const existingProgress = svg.querySelectorAll(`.metro-line-progress.${lineId}`);
+            existingProgress.forEach(p => p.remove());
+
+            // Draw progress segments between consecutive completed stations only
+            for (let i = 0; i < lineData.path.length - 1; i++) {
+                const current = lineData.path[i];
+                const next = lineData.path[i + 1];
+                
+                // Only draw if BOTH current and next are completed
+                if (completedStations.has(current.id) && completedStations.has(next.id)) {
+                    const progressPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    
+                    const controlX = current.x + (next.x - current.x) * 0.5;
+                    const controlY = current.y + (next.y - current.y) * 0.5;
+                    const d = `M ${current.x} ${current.y} Q ${controlX} ${controlY}, ${next.x} ${next.y}`;
+                    
+                    progressPath.setAttribute('d', d);
+                    progressPath.setAttribute('class', `metro-line-progress ${lineId}`);
+                    svg.appendChild(progressPath);
+                }
+            }
+        }
+
+        function createStations() {
+            const canvas = document.getElementById('metroCanvas');
+            
+            Object.entries(metroData.lines).forEach(([lineId, lineData]) => {
+                // Start label - right aligned at fixed position
+                const startLabel = document.createElement('div');
+                startLabel.className = 'line-name-label';
+                startLabel.style.setProperty('--line-color', lineData.color);
+                startLabel.style.background = lineData.color;
+                startLabel.innerHTML = `${lineData.name} ${lineData.icon}`;
+                startLabel.style.whiteSpace = 'normal';
+                startLabel.style.lineHeight = '1.3';
+                const startPos = lineData.path[0];
+                
+                // Fixed position for all labels, right-aligned
+                startLabel.style.left = '10px';
+                startLabel.style.top = (startPos.y - 10) + 'px';
+                
+                // Click handler to zoom to this line
+                startLabel.onclick = () => zoomToLine(lineId, lineData);
+                
+                canvas.appendChild(startLabel);
+
+                // End marker (three dots) for continuation
+                const endPos = lineData.path[lineData.path.length - 1];
+                const endMarker = document.createElement('div');
+                endMarker.style.position = 'absolute';
+                endMarker.style.left = (endPos.x + 30) + 'px';
+                endMarker.style.top = (endPos.y - 10) + 'px';
+                endMarker.style.color = lineData.color;
+                endMarker.style.fontSize = '24px';
+                endMarker.style.fontWeight = 'bold';
+                endMarker.style.letterSpacing = '2px';
+                endMarker.textContent = '...';
+                endMarker.style.zIndex = '15';
+                canvas.appendChild(endMarker);
+
+                lineData.path.forEach((station, index) => {
+                    const stationEl = document.createElement('div');
+                    stationEl.className = `station ${lineId}`;
+                    stationEl.setAttribute('data-station-id', station.id);
+                    stationEl.setAttribute('data-line-id', lineId);
+                    if (station.transfer) stationEl.classList.add('transfer');
+                    stationEl.style.setProperty('--line-color', lineData.color);
+                    
+                    if (completedStations.has(station.id)) {
+                        stationEl.classList.add('completed');
+                    }
+                    
+                    stationEl.style.left = (station.x - 9) + 'px';
+                    stationEl.style.top = (station.y - 9) + 'px';
+                    
+                    const marker = document.createElement('div');
+                    marker.className = 'station-marker';
+                    stationEl.appendChild(marker);
+                    
+                    const label = document.createElement('div');
+                    label.className = `station-label ${station.label}`;
+                    label.textContent = station.title;
+                    stationEl.appendChild(label);
+                    
+                    stationEl.onclick = () => openStationInfo(station, lineData, lineId);
+                    canvas.appendChild(stationEl);
+                });
+            });
+        }
+
+        function zoomToLine(lineId, lineData) {
+            const container = document.getElementById('mapContainer');
+            
+            // Calculate vertical center and horizontal start of the line
+            const allY = lineData.path.map(p => p.y);
+            const minY = Math.min(...allY);
+            const maxY = Math.max(...allY);
+            const centerY = (minY + maxY) / 2;
+            const startX = Math.min(...lineData.path.map(p => p.x));
+            
+            // Zoom IN to 1.4x to really focus on this line
+            scale = 1.4;
+            applyZoom();
+            
+            // Pan to show line from left side, centered vertically
+            setTimeout(() => {
+                const leftPadding = 280; // Space from left edge to show line labels
+                const viewportHeight = container.clientHeight;
+                
+                container.scrollTo({
+                    left: (startX * scale) - leftPadding,
+                    top: (centerY * scale) - (viewportHeight / 2),
+                    behavior: 'smooth'
+                });
+            }, 100);
+        }
+
+        function openStationInfo(station, lineData, lineId) {
+            const panel = document.getElementById('infoPanel');
+            const header = document.getElementById('panelHeader');
+            const title = document.getElementById('panelTitle');
+            const meta = document.getElementById('panelMeta');
+            const content = document.getElementById('panelContent');
+            
+            header.style.background = lineData.color;
+            header.style.setProperty('--panel-color', lineData.color);
+            content.style.setProperty('--panel-color', lineData.color);
+            
+            title.textContent = station.title;
+            meta.innerHTML = `
+                <span class="meta-tag">${lineData.icon} ${lineData.name}</span>
+                <span class="meta-tag">Fase ${station.phase}</span>
+                ${station.transfer ? '<span class="meta-tag">🔄 Transfer Point</span>' : ''}
+            `;
+            
+            content.innerHTML = generateDetailedContent(station, lineData, lineId);
+            panel.classList.add('active');
+            
+            // Zoom to the clicked station
+            zoomToStation(station);
+        }
+
+        function zoomToStation(station) {
+            const container = document.getElementById('mapContainer');
+            
+            // Zoom to 1.3x for better focus on the station
+            scale = 1.3;
+            applyZoom();
+            
+            // Pan to center the station (accounting for the info panel width)
+            setTimeout(() => {
+                const panelWidth = 600; // Width of info panel
+                const viewportWidth = container.clientWidth - panelWidth;
+                const viewportHeight = container.clientHeight;
+                
+                container.scrollTo({
+                    left: (station.x * scale) - (viewportWidth / 2),
+                    top: (station.y * scale) - (viewportHeight / 2),
+                    behavior: 'smooth'
+                });
+            }, 100);
+        }
+
+        function zoomToPhase(phaseNumber) {
+            const container = document.getElementById('mapContainer');
+            
+            // Phase positions and widths
+            const phases = {
+                1: { left: 250, width: 550, center: 525 },
+                2: { left: 800, width: 750, center: 1175 },
+                3: { left: 1550, width: 900, center: 2000 }
+            };
+            
+            const phase = phases[phaseNumber];
+            const viewportWidth = container.clientWidth;
+            
+            // Calculate zoom to fit phase width perfectly in viewport (with padding)
+            const padding = 100;
+            const targetScale = (viewportWidth - padding) / phase.width;
+            scale = Math.min(Math.max(targetScale, 0.8), 1.5); // Between 0.8x and 1.5x
+            applyZoom();
+            
+            // Pan to center the phase column horizontally only
+            setTimeout(() => {
+                container.scrollTo({
+                    left: (phase.center * scale) - (viewportWidth / 2),
+                    top: container.scrollTop, // Keep current vertical position
+                    behavior: 'smooth'
+                });
+            }, 100);
+        }
+
+        function generateDetailedContent(station, lineData, lineId) {
+            const lineStations = lineData.path;
+            const currentIndex = lineStations.findIndex(s => s.id === station.id);
+            const prevStation = currentIndex > 0 ? lineStations[currentIndex - 1] : null;
+            const nextStation = currentIndex < lineStations.length - 1 ? lineStations[currentIndex + 1] : null;
+
+            return `
+                <div class="content-section">
+                    <h3>📋 Omschrijving</h3>
+                    <p>Deze stap is essentieel voor het succesvol implementeren van AI binnen uw organisatie. Het helpt bij het minimaliseren van risico's terwijl de waarde wordt gemaximaliseerd.</p>
+                    <p>Door deze fase zorgvuldig door te lopen, legt u een solide fundament voor verdere AI-adoptie en zorgt u ervoor dat alle belanghebbenden betrokken en geïnformeerd zijn.</p>
+                </div>
+                
+                <div class="action-box">
+                    <h3>🎯 Concrete acties</h3>
+                    <ul>
+                        <li><strong>Start met een grondige inventarisatie</strong> van de huidige situatie en behoeften binnen uw organisatie</li>
+                        <li><strong>Betrek alle relevante stakeholders</strong> vanaf het begin - dit vergroot draagvlak en kwaliteit</li>
+                        <li><strong>Documenteer alle bevindingen</strong> en beslissingen zorgvuldig voor toekomstige referentie</li>
+                        <li><strong>Plan regelmatige evaluatiemomenten</strong> in om voortgang te monitoren en bij te sturen waar nodig</li>
+                    </ul>
+                </div>
+                
+                ${station.transfer ? `
+                <div class="checkpoint-box">
+                    <h3>🔄 Transfer Point: Kruispunt van kennis</h3>
+                    <p>Dit station is een belangrijk kruispunt waar meerdere aspecten van AI-implementatie samenkomen. Hier is het cruciaal om de verschillende perspectieven (${lineData.name} en andere categorieën) te integreren voor een holistische aanpak.</p>
+                </div>
+                ` : ''}
+                
+                <div class="content-section">
+                    <h3>💡 Tips & best practices</h3>
+                    <p>Zorg ervoor dat u realistische verwachtingen schept en communiceer transparant over zowel de mogelijkheden als de beperkingen van de gekozen aanpak. Begin klein, leer snel en schaal geleidelijk.</p>
+                    <p>Betrek diverse perspectieven in het proces - technische, juridische, business en gebruikersinzichten zijn allemaal waardevol voor succes.</p>
+                </div>
+                
+                <div class="content-section">
+                    <h3>⚠️ Veelvoorkomende valkuilen</h3>
+                    <ul>
+                        <li>Te snel willen schalen zonder voldoende fundament of leerervaring</li>
+                        <li>Onvoldoende aandacht voor change management en gebruikersadoptie</li>
+                        <li>Het negeren van juridische en ethische overwegingen in een vroeg stadium</li>
+                        <li>Niet meten van daadwerkelijke impact en waarde - geen KPIs definiëren</li>
+                    </ul>
+                </div>
+                
+                <div class="content-section">
+                    <h3>🔗 Je reis door de ${lineData.name} lijn</h3>
+                    ${prevStation ? `<p><strong>◀ Vorige stap:</strong> ${prevStation.title}</p>` : '<p><em>Dit is het startpunt van deze lijn</em></p>'}
+                    ${nextStation ? `<p><strong>Volgende stap ▶:</strong> ${nextStation.title}</p>` : '<p><em>Dit is de laatste stap op deze lijn</em></p>'}
+                </div>
+                
+                <div class="checkbox-container">
+                    <label class="checkbox-label">
+                        <input type="checkbox" 
+                               id="checkbox-${station.id}" 
+                               ${completedStations.has(station.id) ? 'checked' : ''}
+                               onchange="toggleComplete('${station.id}', '${lineId}')">
+                        <span>✓ Ik heb deze stap succesvol doorlopen en gedocumenteerd</span>
+                    </label>
+                </div>
+            `;
+        }
+
+        function closePanel() {
+            document.getElementById('infoPanel').classList.remove('active');
+        }
+
+        function toggleComplete(stationId, lineId) {
+            if (completedStations.has(stationId)) {
+                completedStations.delete(stationId);
+            } else {
+                completedStations.add(stationId);
+            }
+            localStorage.setItem('completedStations', JSON.stringify([...completedStations]));
+            
+            // Update station visual using data attribute
+            const stationEl = document.querySelector(`[data-station-id="${stationId}"]`);
+            if (stationEl) {
+                stationEl.classList.toggle('completed', completedStations.has(stationId));
+            }
+            
+            updateLineProgress(lineId, metroData.lines[lineId]);
+            updateProgress();
+        }
+
+        function updateProgress() {
+            const container = document.getElementById('progressContainer');
+            container.innerHTML = '';
+            
+            Object.entries(metroData.lines).forEach(([lineId, lineData]) => {
+                const total = lineData.path.length;
+                const completed = lineData.path.filter(s => completedStations.has(s.id)).length;
+                const percentage = (completed / total) * 100;
+                
+                const progress = document.createElement('div');
+                progress.className = 'line-progress';
+                progress.innerHTML = `
+                    <span>${lineData.icon}</span>
+                    <div class="line-progress-bar">
+                        <div class="line-progress-fill" style="width: ${percentage}%; background: ${lineData.color};"></div>
+                    </div>
+                    <span style="font-size: 11px; color: #666;">${completed}/${total}</span>
+                `;
+                container.appendChild(progress);
+            });
+        }
+
+        function zoomIn() {
+            scale = Math.min(scale + 0.15, 1.5);
+            applyZoom();
+        }
+
+        function zoomOut() {
+            const container = document.getElementById('mapContainer');
+            const canvas = document.getElementById('metroCanvas');
+            
+            // Calculate minimum zoom to fit all content horizontally
+            const canvasWidth = 2400; // Total width including padding
+            const containerWidth = container.clientWidth;
+            const minZoom = containerWidth / canvasWidth;
+            
+            // Don't zoom out beyond what's needed to see all horizontal content
+            scale = Math.max(scale - 0.15, Math.max(minZoom, 0.5));
+            applyZoom();
+        }
+
+        function resetView() {
+            scale = 1;
+            applyZoom();
+            document.getElementById('mapContainer').scrollTo({
+                left: 0,
+                top: 0,
+                behavior: 'smooth'
+            });
+        }
+
+        function applyZoom() {
+            document.getElementById('metroCanvas').style.transform = `scale(${scale})`;
+        }
+
+        // Panning
+        let isPanning = false;
+        let startX, startY, scrollLeft, scrollTop;
+        const container = document.getElementById('mapContainer');
+
+        container.addEventListener('mousedown', (e) => {
+            if (!e.target.closest('.station') && !e.target.closest('.control-btn')) {
+                isPanning = true;
+                startX = e.pageX - container.offsetLeft;
+                startY = e.pageY - container.offsetTop;
+                scrollLeft = container.scrollLeft;
+                scrollTop = container.scrollTop;
+            }
+        });
+
+        container.addEventListener('mouseleave', () => isPanning = false);
+        container.addEventListener('mouseup', () => isPanning = false);
+
+        container.addEventListener('mousemove', (e) => {
+            if (!isPanning) return;
+            e.preventDefault();
+            const x = e.pageX - container.offsetLeft;
+            const y = e.pageY - container.offsetTop;
+            container.scrollLeft = scrollLeft - (x - startX) * 1.5;
+            container.scrollTop = scrollTop - (y - startY) * 1.5;
+        });
+
+        window.onload = () => {
+            drawMetroLines();
+            createStations();
+            updateProgress();
+            // Start at the beginning (Fase 1)
+            container.scrollLeft = 0;
+            container.scrollTop = 0;
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,2409 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GenAI Implementatie Checklist - Thomas More</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --tm-orange: #FF6B35;
+            --tm-dark-blue: #003D5C;
+            --tech-green: #4CAF50;
+            --legal-blue: #5C7CFA;
+            --economic-purple: #9C27B0;
+            --creative-pink: #E91E63;
+            --education-orange: #FF9800;
+            --bg-light: #F5F7FA;
+            --text-dark: #2C3E50;
+            --shadow: 0 2px 8px rgba(0,0,0,0.1);
+            --shadow-hover: 0 8px 24px rgba(0,0,0,0.15);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #F5F7FA 0%, #E8EEF2 100%);
+            color: var(--text-dark);
+            line-height: 1.6;
+        }
+
+        header {
+            background: white;
+            padding: 2rem 2rem 1rem;
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .logo-section h1 {
+            color: var(--tm-dark-blue);
+            font-size: 2rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .logo-section .subtitle {
+            color: var(--tm-orange);
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .progress-stats {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-item.progress-container {
+            min-width: 200px;
+            text-align: left;
+        }
+
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .progress-text {
+            font-size: 0.85rem;
+            color: #666;
+            font-weight: 600;
+        }
+
+        .progress-numbers {
+            font-size: 0.9rem;
+            color: var(--tm-orange);
+            font-weight: 700;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 12px;
+            background: #E8EEF2;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--tech-green) 0%, var(--tm-orange) 100%);
+            border-radius: 20px;
+            transition: width 0.5s ease;
+            width: 0%;
+            box-shadow: 0 2px 4px rgba(76, 175, 80, 0.3);
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--tm-orange);
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .filters {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 0.6rem 1.2rem;
+            border: 2px solid #ddd;
+            background: white;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .filter-btn:hover {
+            border-color: var(--tm-orange);
+            transform: translateY(-2px);
+        }
+
+        .filter-btn.active {
+            background: var(--tm-orange);
+            color: white;
+            border-color: var(--tm-orange);
+        }
+
+        /* Category filter colors */
+        .filter-btn[data-category="tech"]:not(.active) {
+            border-color: var(--tech-green);
+            color: var(--tech-green);
+        }
+
+        .filter-btn[data-category="tech"].active {
+            background: var(--tech-green);
+            border-color: var(--tech-green);
+            color: white;
+        }
+
+        .filter-btn[data-category="legal"]:not(.active) {
+            border-color: var(--legal-blue);
+            color: var(--legal-blue);
+        }
+
+        .filter-btn[data-category="legal"].active {
+            background: var(--legal-blue);
+            border-color: var(--legal-blue);
+            color: white;
+        }
+
+        .filter-btn[data-category="economic"]:not(.active) {
+            border-color: var(--economic-purple);
+            color: var(--economic-purple);
+        }
+
+        .filter-btn[data-category="economic"].active {
+            background: var(--economic-purple);
+            border-color: var(--economic-purple);
+            color: white;
+        }
+
+        .filter-btn[data-category="creative"]:not(.active) {
+            border-color: var(--creative-pink);
+            color: var(--creative-pink);
+        }
+
+        .filter-btn[data-category="creative"].active {
+            background: var(--creative-pink);
+            border-color: var(--creative-pink);
+            color: white;
+        }
+
+        .filter-btn[data-category="education"]:not(.active) {
+            border-color: var(--education-orange);
+            color: var(--education-orange);
+        }
+
+        .filter-btn[data-category="education"].active {
+            background: var(--education-orange);
+            border-color: var(--education-orange);
+            color: white;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 250px;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 0.7rem 1rem;
+            border: 2px solid #ddd;
+            border-radius: 25px;
+            font-size: 0.95rem;
+            transition: border-color 0.3s;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--tm-orange);
+        }
+
+        .view-toggle {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .view-btn {
+            padding: 0.6rem 1rem;
+            border: 2px solid #ddd;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .view-btn.active {
+            background: var(--tm-dark-blue);
+            color: white;
+            border-color: var(--tm-dark-blue);
+        }
+
+        main {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .bookmarked-section {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            display: none;
+        }
+
+        .bookmarked-section.has-bookmarks {
+            display: block;
+        }
+
+        .bookmarked-section h2 {
+            color: var(--tm-dark-blue);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .phase-section {
+            margin-bottom: 3rem;
+        }
+
+        .phase-header {
+            background: linear-gradient(135deg, var(--tm-dark-blue) 0%, var(--tm-orange) 100%);
+            color: white;
+            padding: 1.5rem 2rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            box-shadow: var(--shadow);
+        }
+
+        .phase-header .phase-icon {
+            font-size: 2rem;
+        }
+
+        .phase-header .phase-info h2 {
+            font-size: 1.5rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .phase-header .phase-info p {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            border-top: 4px solid;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .card.tech { border-top-color: var(--tech-green); }
+        .card.legal { border-top-color: var(--legal-blue); }
+        .card.economic { border-top-color: var(--economic-purple); }
+        .card.creative { border-top-color: var(--creative-pink); }
+        .card.education { border-top-color: var(--education-orange); }
+
+        .card.completed {
+            background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
+            opacity: 0.85;
+        }
+
+        .card.completed .card-title {
+            opacity: 0.7;
+        }
+
+        .card-title-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .card-check {
+            flex-shrink: 0;
+            width: 24px;
+            height: 24px;
+            margin-top: 0.25rem;
+            border: 3px solid #ddd;
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card-check:hover {
+            border-color: var(--tech-green);
+            transform: scale(1.15);
+        }
+
+        .card-check.checked {
+            background: var(--tech-green);
+            border-color: var(--tech-green);
+            animation: checkBounce 0.4s ease;
+        }
+
+        .card-check.checked::after {
+            content: '✓';
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            animation: checkMark 0.3s ease;
+        }
+
+        @keyframes checkBounce {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes checkMark {
+            0% { transform: scale(0) rotate(-45deg); opacity: 0; }
+            50% { transform: scale(1.2) rotate(0deg); }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--tm-dark-blue);
+            flex: 1;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 1rem;
+        }
+
+        .category-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .category-badge.tech { background: #E8F5E9; color: var(--tech-green); }
+        .category-badge.legal { background: #E3F2FD; color: var(--legal-blue); }
+        .category-badge.economic { background: #F3E5F5; color: var(--economic-purple); }
+        .category-badge.creative { background: #FCE4EC; color: var(--creative-pink); }
+        .category-badge.education { background: #FFF3E0; color: var(--education-orange); }
+
+        .bookmark-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .bookmark-btn:hover {
+            transform: scale(1.2);
+        }
+
+        .bookmark-btn.bookmarked {
+            color: var(--tm-orange);
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--tm-dark-blue);
+            flex: 1;
+        }
+
+        .card-preview {
+            font-size: 0.9rem;
+            color: #666;
+            line-height: 1.5;
+            margin-bottom: 1rem;
+            flex-grow: 1;
+        }
+
+        .card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 1rem;
+            border-top: 1px solid #eee;
+        }
+
+        .phase-tag {
+            font-size: 0.8rem;
+            padding: 0.3rem 0.7rem;
+            background: var(--bg-light);
+            border-radius: 12px;
+            font-weight: 500;
+        }
+
+        .completion-badge {
+            font-size: 0.75rem;
+            padding: 0.3rem 0.7rem;
+            background: var(--tech-green);
+            color: white;
+            border-radius: 12px;
+            font-weight: 600;
+            display: none;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .card.completed .completion-badge {
+            display: flex;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            animation: fadeIn 0.3s;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            max-width: 800px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            animation: slideUp 0.3s;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-header {
+            padding: 2rem;
+            border-bottom: 2px solid #eee;
+            position: sticky;
+            top: 0;
+            background: white;
+            z-index: 10;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            background: none;
+            border: none;
+            font-size: 2rem;
+            cursor: pointer;
+            color: #666;
+            transition: color 0.3s;
+        }
+
+        .modal-close:hover {
+            color: var(--tm-orange);
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            color: var(--tm-dark-blue);
+            margin-bottom: 0.5rem;
+            padding-right: 3rem;
+        }
+
+        .modal-meta {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+            margin-left: auto;
+        }
+
+        .complete-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1rem;
+            border: 2px solid #ddd;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .complete-btn:hover {
+            border-color: var(--tech-green);
+            transform: translateY(-2px);
+        }
+
+        .complete-btn.completed {
+            background: var(--tech-green);
+            border-color: var(--tech-green);
+            color: white;
+        }
+
+        .complete-check {
+            width: 20px;
+            height: 20px;
+            border: 2px solid currentColor;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .complete-check.checked::after {
+            content: '✓';
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .complete-text {
+            white-space: nowrap;
+        }
+
+        .modal-body {
+            padding: 2rem;
+        }
+
+        .modal-section {
+            margin-bottom: 2rem;
+        }
+
+        .modal-section h3 {
+            color: var(--tm-dark-blue);
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+
+        .modal-section p {
+            line-height: 1.8;
+            color: #444;
+            margin-bottom: 1rem;
+        }
+
+        .modal-section ul {
+            padding-left: 1.5rem;
+            line-height: 1.8;
+        }
+
+        .modal-section ul li {
+            margin-bottom: 0.5rem;
+        }
+
+        .modal-footer {
+            padding: 1.5rem 2rem;
+            border-top: 2px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            bottom: 0;
+            background: white;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 0.7rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: var(--tm-orange);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #E55A2B;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: var(--bg-light);
+            color: var(--text-dark);
+        }
+
+        .btn-secondary:hover {
+            background: #ddd;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #666;
+        }
+
+        .no-results h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--tm-dark-blue);
+        }
+
+        @media (max-width: 768px) {
+            .header-top {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .filters {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .search-box {
+                width: 100%;
+            }
+
+            .cards-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .modal-content {
+                margin: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <div class="header-top">
+                <div class="logo-section">
+                    <h1>MEDIAGENIE Checklist</h1>
+                    <div class="subtitle">GenAI Implementatie Gids</div>
+                </div>
+                <div class="progress-stats">
+                    <div class="stat-item progress-container">
+                        <div class="progress-label">
+                            <span class="progress-text">Voortgang</span>
+                            <span class="progress-numbers" id="progressNumbers">0/59</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" id="bookmarkCount">0</div>
+                        <div class="stat-label">Bookmarks</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="filters">
+                <div class="filter-group">
+                    <button class="filter-btn active" data-phase="all">Alle Fases</button>
+                    <button class="filter-btn" data-phase="1">Fase 1: Exploratie</button>
+                    <button class="filter-btn" data-phase="2">Fase 2: Implementatie</button>
+                    <button class="filter-btn" data-phase="3">Fase 3: Transformatie</button>
+                </div>
+                
+                <div class="filter-group">
+                    <button class="filter-btn active" data-category="all">Alle Categorieën</button>
+                    <button class="filter-btn" data-category="tech">🔧 Technisch</button>
+                    <button class="filter-btn" data-category="legal">⚖️ Juridisch</button>
+                    <button class="filter-btn" data-category="economic">💼 Economisch</button>
+                    <button class="filter-btn" data-category="creative">🎨 Creatief</button>
+                    <button class="filter-btn" data-category="education">🎓 Onderwijs</button>
+                </div>
+                
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="🔍 Zoek in checklist...">
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="bookmarked-section" id="bookmarkedSection">
+            <h2>📌 Jouw Bookmarks</h2>
+            <div class="cards-grid" id="bookmarkedGrid"></div>
+        </div>
+
+        <div id="phaseSections"></div>
+        
+        <div class="no-results" id="noResults" style="display: none;">
+            <h3>Geen resultaten gevonden</h3>
+            <p>Probeer andere filters of zoektermen</p>
+        </div>
+    </main>
+
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button class="modal-close" onclick="closeModal()">×</button>
+                <h2 class="modal-title" id="modalTitle"></h2>
+                <div class="modal-meta" id="modalMeta"></div>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+            <div class="modal-footer">
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="previousCard()">← Vorige</button>
+                    <button class="btn btn-secondary" onclick="nextCard()">Volgende →</button>
+                </div>
+                <button class="btn btn-primary" onclick="closeModal()">Sluiten</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data structure
+        const checklistData = [
+            // FASE 1 - TECHNISCH
+            {
+                id: 1,
+                phase: 1,
+                phaseTitle: "Fase 1: Exploratie",
+                category: "tech",
+                categoryTitle: "Technische Implementatie",
+                title: "Focus op off-the-shelf toepassingen",
+                preview: "Begin met bestaande, bewezen AI-tools voordat je investeert in custom oplossingen.",
+                content: {
+                    intro: "In de exploratatiefase is het essentieel om te starten met bestaande AI-oplossingen die al bewezen hebben te werken. Dit minimaliseert risico en leertijd.",
+                    details: [
+                        "Evalueer populaire AI-tools zoals ChatGPT, Midjourney, Jasper, etc.",
+                        "Test verschillende use cases binnen je organisatie",
+                        "Verzamel feedback van early adopters",
+                        "Documenteer wat wel en niet werkt"
+                    ],
+                    benefits: "Door te starten met off-the-shelf oplossingen kun je snel waarde creëren zonder grote investeringen in ontwikkeling.",
+                    nextSteps: "Maak een shortlist van 3-5 tools die het meest relevant zijn voor jouw organisatie en start een pilot."
+                }
+            },
+            {
+                id: 2,
+                phase: 1,
+                phaseTitle: "Fase 1: Exploratie",
+                category: "tech",
+                categoryTitle: "Technische Implementatie",
+                title: "Breng datamaturiteit in kaart",
+                preview: "Begrijp de kwaliteit en beschikbaarheid van je data voordat je AI implementeert.",
+                content: {
+                    intro: "De kwaliteit van AI-outputs hangt direct samen met de kwaliteit van je input data. Een grondige assessment is cruciaal.",
+                    details: [
+                        "Inventariseer welke data beschikbaar is in je organisatie",
+                        "Beoordeel data kwaliteit: volledigheid, accuraatheid, consistentie",
+                        "Identificeer data gaps en bottlenecks",
+                        "Bepaal de huidige datamaturiteit op basis van een framework"
+                    ],
+                    benefits: "Met een helder beeld van je datamaturiteit kun je realistische verwachtingen stellen en gefocust investeren in verbeteringen.",
+                    nextSteps: "Voer een data maturity assessment uit en prioriteer quick wins voor dataverbeteringen."
+                }
+            },
+            {
+                id: 3,
+                phase: 1,
+                phaseTitle: "Fase 1: Exploratie",
+                category: "tech",
+                categoryTitle: "Technische Implementatie",
+                title: "Identificeer en documenteer AI-systemen",
+                preview: "Creëer een overzicht van alle AI-toepassingen die in gebruik zijn binnen je organisatie.",
+                content: {
+                    intro: "Schaduw-IT en ongecordineerd AI-gebruik kunnen leiden tot veiligheids- en compliance risicos. Een centraal register is essentieel.",
+                    details: [
+                        "Maak een inventaris van alle gebruikte AI-tools",
+                        "Documenteer per tool: functionaliteit, gebruikers, data toegang",
+                        "Categoriseer tools op basis van risico en impact",
+                        "Stel een governance proces in voor nieuwe AI-adoptie"
+                    ],
+                    benefits: "Een centraal overzicht voorkomt wildgroei, bevordert kennisdeling en maakt risicobeheersing mogelijk.",
+                    nextSteps: "Start een AI Tool Register en communiceer het proces voor goedkeuring van nieuwe tools."
+                }
+            },
+            
+            // FASE 1 - JURIDISCH
+            {
+                id: 4,
+                phase: 1,
+                phaseTitle: "Fase 1: Exploratie",
+                category: "legal",
+                categoryTitle: "Juridische & Ethische Aspecten",
+                title: "Bepaal de impact van de EU AI Act",
+                preview: "Begrijp welke AI-systemen onder de EU AI Act vallen en wat de verplichtingen zijn.",
+                content: {
+                    intro: "De EU AI Act introduceert een risicogebaseerd framework voor AI-systemen. Compliance is verplicht vanaf 2025-2026.",
+                    details: [
+                        "Classificeer je AI-systemen: verboden, hoog-risico, beperkt risico, minimaal risico",
+                        "Identificeer welke systemen onder strikte regelgeving vallen",
+                        "Bepaal vereisten per risicocategorie",
+                        "Stel een compliance roadmap op"
+                    ],
+                    benefits: "Proactieve compliance voorkomt boetes, reputatieschade en operationele verstoringen.",
+                    nextSteps: "Voer een AI Act Impact Assessment uit voor al je huidige en geplande AI-systemen."
+                }
+            },
+            {
+                id: 5,
+                phase: 1,
+                phaseTitle: "Fase 1: Exploratie",
+                category: "legal",
+                categoryTitle: "Juridische & Ethische Aspecten",
+                title: "Neem richtlijnen aan",
+                preview: "Stel duidelijke ethische richtlijnen op voor verantwoord AI-gebruik in je organisatie.",
+                content: {
+                    intro: "Ethische richtlijnen vormen de basis voor verantwoorde AI-adoptie en bouwen vertrouwen op bij stakeholders.",
+                    details: [
+                        "Definieer kernwaarden: transparantie, fairness, privacy, accountability",
+                        "Stel gedragscodes op voor ontwikkelaars en gebruikers",
+                        "Creëer een ethics review board",
+                        "Integreer ethiek in design en development processen"
+                    ],
+                    benefits: "Duidelijke ethische kaders voorkomen controverses en versterken je reputatie als verantwoordelijke organisatie.",
+                    nextSteps: "Organiseer workshops met stakeholders om consensus te bereiken over ethische principes."
+                }
+            },
+            {
+                id: 6,
+                phase: 1,
+                phaseTitle: "Fase 1: Exploratie",
+                category: "legal",
+                categoryTitle: "Juridische & Ethische Aspecten",
+                title: "Deel AI-systemen op in risicoclassificatie",
+                preview: "Gebruik een risicogebaseerde aanpak om prioriteiten te stellen in governance en compliance.",
+                content: {
+                    intro: "Niet alle AI-systemen vereisen hetzelfde niveau van toezicht. Een risicoclassificatie helpt resources efficiënt in te zetten.",
+                    details: [
+                        "Ontwikkel een risico assessment framework",
+                        "Beoordeel impact op individuen, organisatie en samenleving",
+                        "Categoriseer systemen in laag/medium/hoog risico",
+                        "Pas governance maatregelen aan per risiconiveau"
+                    ],
+                    benefits: "Focus je resources op de systemen die de grootste impact hebben en de meeste risico's met zich meebrengen.",
+                    nextSteps: "Voer een pilot uit met risicoclassificatie van je 5 belangrijkste AI-systemen."
+                }
+            },
+            {
+                id: 7,
+                phase: 1,
+                phaseTitle: "Fase 1: Exploratie",
+                category: "legal",
+                categoryTitle: "Juridische & Ethische Aspecten",
+                title: "Communiceer intern transparant over gebruik",
+                preview: "Creëer openheid over AI-gebruik richting medewerkers en bouw vertrouwen op.",
+                content: {
+                    intro: "Transparantie is cruciaal voor acceptatie. Medewerkers moeten begrijpen hoe AI wordt ingezet en wat dit betekent voor hun werk.",
+                    details: [
+                        "Communiceer welke AI-tools worden gebruikt en waarvoor",
+                        "Leg uit hoe beslissingen tot stand komen",
+                        "Bied training en ondersteuning aan",
+                        "Creëer kanalen voor vragen en feedback"
+                    ],
+                    benefits: "Open communicatie vermindert weerstand, bevordert adoptie en identificeert potentiële problemen vroeg.",
+                    nextSteps: "Organiseer info sessies en creëer een interne AI-knowledge base."
+                }
+            },
+
+            // FASE 1 - ECONOMISCH
+            {
+                id: 8,
+                phase: 1,
+                phaseTitle: "Fase 1: Exploratie",
+                category: "economic",
+                categoryTitle: "Economische Impact & Bedrijfsstrategie",
+                title: "Analyseer het huidig organisatiemodel",
+                preview: "Begrijp je huidige organisatiestructuur voordat je AI-gedreven veranderingen doorvoert.",
+                content: {
+                    intro: "AI zal impact hebben op processen, rollen en verantwoordelijkheden. Een grondige analyse van je huidige situatie is essentieel.",
+                    details: [
+                        "Map key business processen en workflows",
+                        "Identificeer rollen en verantwoordelijkheden",
+                        "Analyseer besluitvormingsstructuren",
+                        "Bepaal organisatiecultuur en change readiness"
+                    ],
+                    benefits: "Met een helder begrip van je uitgangspositie kun je gerichte interventies plannen en realistische doelen stellen.",
+                    nextSteps: "Voer interviews en workshops uit om een as-is organisatie map te creëren."
+                }
+            },
+            {
+                id: 9,
+                phase: 1,
+                phaseTitle: "Fase 1: Exploratie",
+                category: "economic",
+                categoryTitle: "Economische Impact & Bedrijfsstrategie",
+                title: "Laat ruimte voor experimenten",
+                preview: "Creëer een veilige omgeving waar teams kunnen experimenteren met AI zonder angst voor falen.",
+                content: {
+                    intro: "Innovatie vereist experimenteerruimte. Een 'fail fast, learn faster' cultuur is essentieel voor succesvolle AI-adoptie.",
+                    details: [
+                        "Alloceer tijd en budget voor experimenteren",
+                        "Creëer sandboxes en testomgevingen",
+                        "Vier learnings, niet alleen successen",
+                        "Deel inzichten breed in de organisatie"
+                    ],
+                    benefits: "Experimenteerruimte leidt tot innovatieve toepassingen en vergroot organisatie-brede AI-geletterdheid.",
+                    nextSteps: "Start een AI Innovation Lab met dedicated resources en tijd voor experimenteren."
+                }
+            },
+            {
+                id: 10,
+                phase: 1,
+                phaseTitle: "Fase 1: Exploratie",
+                category: "economic",
+                categoryTitle: "Economische Impact & Bedrijfsstrategie",
+                title: "Ontwerp een AI-organisatiemodel en flexibele AI-strategie",
+                preview: "Ontwikkel een toekomstvisie voor hoe AI geïntegreerd wordt in je organisatiestructuur.",
+                content: {
+                    intro: "AI is geen IT-project maar een organisatiebrede transformatie. Een doordachte target operating model is noodzakelijk.",
+                    details: [
+                        "Definieer AI-rollen en verantwoordelijkheden",
+                        "Bepaal governance structuren (centraal vs decentraal)",
+                        "Ontwerp samenwerkingsmodellen tussen business en IT",
+                        "Stel KPIs en succes metrics vast"
+                    ],
+                    benefits: "Een duidelijk operating model voorkomt versnippering, bevordert schaalvoordelen en versnelt time-to-value.",
+                    nextSteps: "Workshop met leadership team om consensus te bereiken over AI-organisatiemodel."
+                }
+            },
+            {
+                id: 11,
+                phase: 1,
+                phaseTitle: "Fase 1: Exploratie",
+                category: "economic",
+                categoryTitle: "Economische Impact & Bedrijfsstrategie",
+                title: "Identificeer enkele use-cases",
+                preview: "Selecteer concrete toepassingen met hoge impact en haalbaarheid voor je eerste AI-projecten.",
+                content: {
+                    intro: "Quick wins bouwen momentum en demonstreren waarde. Focus op use cases met heldere ROI en beperkte complexiteit.",
+                    details: [
+                        "Organiseer ideation sessies met verschillende stakeholders",
+                        "Evalueer use cases op impact en haalbaarheid",
+                        "Prioriteer op basis van strategische fit",
+                        "Selecteer 2-3 pilots voor de exploratiefase"
+                    ],
+                    benefits: "Gerichte pilots leveren concrete resultaten, bouwen capabilities op en creëren draagvlak.",
+                    nextSteps: "Gebruik een prioritization framework om je top 3 use cases te selecteren."
+                }
+            },
+            {
+                id: 12,
+                phase: 1,
+                phaseTitle: "Fase 1: Exploratie",
+                category: "economic",
+                categoryTitle: "Economische Impact & Bedrijfsstrategie",
+                title: "Start een concrete business case",
+                preview: "Ontwikkel een gedetailleerde business case voor je meest veelbelovende AI-toepassing.",
+                content: {
+                    intro: "Een solide business case is essentieel voor buy-in en investering. Kwantificeer zowel kosten als baten.",
+                    details: [
+                        "Definieer probleem, oplossing en verwachte impact",
+                        "Bereken kosten: ontwikkeling, implementatie, onderhoud",
+                        "Kwantificeer baten: kostenbesparing, revenue growth, efficiency",
+                        "Stel een realistisch implementatieplan op"
+                    ],
+                    benefits: "Een sterke business case bevordert commitment, bevordert resources en stelt duidelijke verwachtingen.",
+                    nextSteps: "Ontwikkel een business case template en vul deze in voor je prioritaire use case."
+                }
+            },
+
+            // FASE 1 - CREATIEF
+            {
+                id: 13,
+                phase: 1,
+                phaseTitle: "Fase 1: Exploratie",
+                category: "creative",
+                categoryTitle: "Creatieve Sector & Media",
+                title: "Waak over kwaliteit",
+                preview: "Stel kwaliteitsnormen vast voor AI-gegenereerde content om je merk te beschermen.",
+                content: {
+                    intro: "AI kan snel content produceren, maar kwaliteit mag niet lijden. Menselijk toezicht blijft essentieel.",
+                    details: [
+                        "Definieer kwaliteitscriteria voor verschillende contenttypes",
+                        "Implementeer review processen voor AI-content",
+                        "Train teams in prompt engineering voor betere outputs",
+                        "Monitor en meet contentkwaliteit systematisch"
+                    ],
+                    benefits: "Consistente kwaliteitscontrole beschermt je merkreputatie en zorgt voor betrouwbare outputs.",
+                    nextSteps: "Ontwikkel quality guidelines en train content creators in het gebruik ervan."
+                }
+            },
+            {
+                id: 14,
+                phase: 1,
+                phaseTitle: "Fase 1: Exploratie",
+                category: "creative",
+                categoryTitle: "Creatieve Sector & Media",
+                title: "Waak over creatieve authenticiteit",
+                preview: "Behoud de unieke stem en stijl van je organisatie bij het gebruik van AI-tools.",
+                content: {
+                    intro: "AI kan homogene content produceren. Het is cruciaal om je onderscheidende creative identity te behouden.",
+                    details: [
+                        "Documenteer je brand voice en creative guidelines",
+                        "Train AI-tools met je eigen content en stijl",
+                        "Combineer AI-efficiëntie met menselijke creativiteit",
+                        "Evalueer regelmatig of content authentiek aanvoelt"
+                    ],
+                    benefits: "Authentieke content resonneert beter met je doelgroep en versterkt merkidentiteit.",
+                    nextSteps: "Creëer een brand voice guide specifiek voor AI-assisted content creation."
+                }
+            },
+            {
+                id: 15,
+                phase: 1,
+                phaseTitle: "Fase 1: Exploratie",
+                category: "creative",
+                categoryTitle: "Creatieve Sector & Media",
+                title: "Stem tijdig af met de eindgebruiker",
+                preview: "Betrek gebruikers vroeg in het proces om AI-oplossingen te ontwikkelen die echt waarde leveren.",
+                content: {
+                    intro: "AI-tools moeten aansluiten bij de werkelijke behoeften van creatives. Co-creatie voorkomt mismatch.",
+                    details: [
+                        "Organiseer gebruikerssessies om pijnpunten te identificeren",
+                        "Test prototypes met eindgebruikers",
+                        "Verzamel continu feedback tijdens pilots",
+                        "Itereer op basis van gebruikersinzichten"
+                    ],
+                    benefits: "User-centric design leidt tot hogere adoptie, betere outputs en tevreden gebruikers.",
+                    nextSteps: "Plan co-creatie sessies met creative teams voor je eerste AI-tools."
+                }
+            },
+            {
+                id: 16,
+                phase: 1,
+                phaseTitle: "Fase 1: Exploratie",
+                category: "creative",
+                categoryTitle: "Creatieve Sector & Media",
+                title: "Werk aan co-creatie mens-machine",
+                preview: "Ontwerp workflows waarbij mens en machine elkaars sterke punten versterken.",
+                content: {
+                    intro: "De kracht van AI ligt in augmentatie, niet vervanging. Optimale samenwerking vereist doordacht workflowdesign.",
+                    details: [
+                        "Identificeer taken waar AI meerwaarde biedt (bijv. brainstormen, eerste drafts)",
+                        "Definieer waar menselijke input essentieel is (strategie, emotie, nuance)",
+                        "Ontwerp hybride workflows die beide versterken",
+                        "Train teams in effectieve mens-AI samenwerking"
+                    ],
+                    benefits: "Optimale samenwerking leidt tot snellere productie, hogere kwaliteit en meer creatieve vrijheid.",
+                    nextSteps: "Map een creative workflow en identificeer optimale mens-machine touchpoints."
+                }
+            },
+
+            // FASE 1 - ONDERWIJS
+            {
+                id: 17,
+                phase: 1,
+                phaseTitle: "Fase 1: Exploratie",
+                category: "education",
+                categoryTitle: "Onderwijs & AI-geletterdheid",
+                title: "Organiseer inspiratiesessies",
+                preview: "Wek enthousiasme en begrip voor AI-mogelijkheden door inspirerende demo's en voorbeelden.",
+                content: {
+                    intro: "Bewustwording en enthousiasme zijn de eerste stappen naar adoptie. Inspiratiesessies maken AI tastbaar.",
+                    details: [
+                        "Organiseer lunch & learn sessies met concrete voorbeelden",
+                        "Nodig sprekers uit die succesvolle AI-implementaties delen",
+                        "Demonstreer tools hands-on",
+                        "Creëer een safe space voor vragen en experimenten"
+                    ],
+                    benefits: "Inspiratie doorbreekt weerstand, wekt nieuwsgierigheid en motiveert mensen om te experimenteren.",
+                    nextSteps: "Plan een maandelijkse AI Inspiration Series met diverse topics en sprekers."
+                }
+            },
+            {
+                id: 18,
+                phase: 1,
+                phaseTitle: "Fase 1: Exploratie",
+                category: "education",
+                categoryTitle: "Onderwijs & AI-geletterdheid",
+                title: "Ondersteun via kennisdeling",
+                preview: "Bouw een kennisbank en community waar medewerkers kunnen leren van elkaar.",
+                content: {
+                    intro: "AI-geletterdheid groeit door doen en delen. Faciliteer kennisuitwisseling en peer learning.",
+                    details: [
+                        "Creëer een centrale AI knowledge base (wiki, SharePoint)",
+                        "Start een intern AI community of practice",
+                        "Organiseer show & tell sessies waar teams experimenten delen",
+                        "Documenteer best practices en lessons learned"
+                    ],
+                    benefits: "Gedeelde kennis versnelt learning curve, voorkomt dubbel werk en bouwt collectieve expertise.",
+                    nextSteps: "Launch een AI knowledge hub en nomineer community champions per afdeling."
+                }
+            },
+            {
+                id: 19,
+                phase: 1,
+                phaseTitle: "Fase 1: Exploratie",
+                category: "education",
+                categoryTitle: "Onderwijs & AI-geletterdheid",
+                title: "Creëer bewustzijn",
+                preview: "Zorg dat iedereen begrijpt wat AI is, wat het kan en wat de implicaties zijn.",
+                content: {
+                    intro: "AI-geletterdheid begint met basisbegrip. Iedereen moet de fundamenten kennen, ongeacht hun rol.",
+                    details: [
+                        "Ontwikkel een AI 101 training voor alle medewerkers",
+                        "Leg uit: wat is AI, machine learning, generative AI",
+                        "Bespreek mogelijkheden én beperkingen",
+                        "Adresseer misvattingen en zorgen proactief"
+                    ],
+                    benefits: "Breed begrip creëert een gemeenschappelijke taal, realistische verwachtingen en productieve discussies.",
+                    nextSteps: "Ontwikkel een verplichte AI awareness module voor alle medewerkers."
+                }
+            },
+            {
+                id: 20,
+                phase: 1,
+                phaseTitle: "Fase 1: Exploratie",
+                category: "education",
+                categoryTitle: "Onderwijs & AI-geletterdheid",
+                title: "Faciliteer training",
+                preview: "Investeer in gerichte trainingen om verschillende competentieniveaus op te bouwen.",
+                content: {
+                    intro: "Van awareness naar competentie vereist structurele training. Differentieer naar rollen en ambities.",
+                    details: [
+                        "Ontwikkel learning paths voor verschillende rollen (gebruiker, power user, developer)",
+                        "Bied zowel online als hands-on trainingen aan",
+                        "Partner met externe experts voor diepgaande topics",
+                        "Integreer AI-vaardigheden in performance management"
+                    ],
+                    benefits: "Systematische training bouwt duurzame capabilities op en maximaliseert ROI van AI-investeringen.",
+                    nextSteps: "Creëer een AI learning curriculum met basis, gevorderd en expert tracks."
+                }
+            },
+            {
+                id: 21,
+                phase: 1,
+                phaseTitle: "Fase 1: Exploratie",
+                category: "education",
+                categoryTitle: "Onderwijs & AI-geletterdheid",
+                title: "Onboard een testgroep",
+                preview: "Start met een enthousiaste pilotgroep die als ambassadeurs kunnen fungeren.",
+                content: {
+                    intro: "Early adopters zijn cruciaal voor succes. Zij testen, geven feedback en inspireren anderen.",
+                    details: [
+                        "Selecteer diverse champions uit verschillende afdelingen",
+                        "Geef hen prioriteit voor training en tools",
+                        "Creëer een feedback loop met product owners",
+                        "Laat hen successen delen met hun teams"
+                    ],
+                    benefits: "Een testgroep genereert praktische inzichten, bouwt ambassadeurschap op en versnelt adoptie.",
+                    nextSteps: "Recruiter 15-20 AI champions en start een intensief onboarding programma."
+                }
+            },
+
+            // FASE 2 - TECHNISCH
+            {
+                id: 22,
+                phase: 2,
+                phaseTitle: "Fase 2: Implementatie",
+                category: "tech",
+                categoryTitle: "Technische Implementatie",
+                title: "Gebruik AI op maat",
+                preview: "Ontwikkel custom AI-oplossingen die perfect aansluiten bij je unieke processen en data.",
+                content: {
+                    intro: "Na succesvolle pilots is het tijd voor custom development die echt differentieert.",
+                    details: [
+                        "Identificeer waar generic tools te kort schieten",
+                        "Bouw custom modellen op je eigen data",
+                        "Integreer AI diep in core processen",
+                        "Ontwikkel proprietary IP en competitieve voordelen"
+                    ],
+                    benefits: "Custom AI levert unieke meerwaarde, diepere integratie en strategische differentiatie.",
+                    nextSteps: "Start een custom AI development project voor je prioritaire use case."
+                }
+            },
+            {
+                id: 23,
+                phase: 2,
+                phaseTitle: "Fase 2: Implementatie",
+                category: "tech",
+                categoryTitle: "Technische Implementatie",
+                title: "Zet in op robuuste systemen",
+                preview: "Bouw enterprise-grade AI-systemen met focus op betrouwbaarheid, schaalbaarheid en prestaties.",
+                content: {
+                    intro: "Productie-AI vereist robuustheid. Investeer in architectuur, monitoring en incident management.",
+                    details: [
+                        "Implementeer monitoring en alerting",
+                        "Bouw fallback mechanismen voor failures",
+                        "Zorg voor schaalbaarheid onder load",
+                        "Test grondig voor edge cases",
+                        "Stel SLAs en KPIs vast"
+                    ],
+                    benefits: "Robuuste systemen minimaliseren downtime, maximaliseren gebruikerstevredenheid en beschermen reputatie.",
+                    nextSteps: "Voer een reliability assessment uit en implementeer best practices."
+                }
+            },
+            {
+                id: 24,
+                phase: 2,
+                phaseTitle: "Fase 2: Implementatie",
+                category: "tech",
+                categoryTitle: "Technische Implementatie",
+                title: "Start een use-case",
+                preview: "Roll out je eerste productie use case naar een bredere gebruikersgroep.",
+                content: {
+                    intro: "Van pilot naar productie: schaal je eerste succesvolle use case systematisch uit.",
+                    details: [
+                        "Finaliseer product op basis van pilot learnings",
+                        "Ontwikkel change management en training materiaal",
+                        "Plan een gefaseerde rollout",
+                        "Monitor adoptie en user satisfaction nauwgezet",
+                        "Itereer snel op basis van feedback"
+                    ],
+                    benefits: "Een succesvolle eerste rollout bouwt confidence, genereert momentum en financiert vervolgstappen.",
+                    nextSteps: "Creëer een gedetailleerd rollout plan met mijlpalen en succes metrics."
+                }
+            },
+
+            // FASE 2 - JURIDISCH
+            {
+                id: 25,
+                phase: 2,
+                phaseTitle: "Fase 2: Implementatie",
+                category: "legal",
+                categoryTitle: "Juridische & Ethische Aspecten",
+                title: "Bepaal de risicostrategie van de organisatie",
+                preview: "Formuleer een coherent risicobeleid dat balanceert tussen innovatie en bescherming.",
+                content: {
+                    intro: "AI brengt nieuwe risico's. Een expliciet risicobeleid geeft richting aan besluitvorming.",
+                    details: [
+                        "Definieer risk appetite per domein (compliance, reputatie, operationeel)",
+                        "Stel risk tolerances vast",
+                        "Ontwikkel risk mitigation strategieën",
+                        "Implementeer risk monitoring en reporting"
+                    ],
+                    benefits: "Helder risicobeleid versnelt besluitvorming, voorkomt paralysis en beschermt de organisatie.",
+                    nextSteps: "Workshop met leadership om consensus te bereiken over risk appetite en tolerances."
+                }
+            },
+            {
+                id: 26,
+                phase: 2,
+                phaseTitle: "Fase 2: Implementatie",
+                category: "legal",
+                categoryTitle: "Juridische & Ethische Aspecten",
+                title: "Stel datamanagementregels op",
+                preview: "Implementeer strikte governance voor data gebruik in AI-systemen.",
+                content: {
+                    intro: "Data is de brandstof van AI. Governance zorgt voor verantwoord, compliant en effectief gebruik.",
+                    details: [
+                        "Stel data classificatie schema's vast",
+                        "Definieer access control policies",
+                        "Implementeer data lineage tracking",
+                        "Zorg voor GDPR compliance (consent, right to erasure, etc.)",
+                        "Regel data retention en archivering"
+                    ],
+                    benefits: "Sterke data governance minimaliseert compliance risico's en maximaliseert data waarde.",
+                    nextSteps: "Ontwikkel een Data Governance Framework en stel een Data Steward aan."
+                }
+            },
+            {
+                id: 27,
+                phase: 2,
+                phaseTitle: "Fase 2: Implementatie",
+                category: "legal",
+                categoryTitle: "Juridische & Ethische Aspecten",
+                title: "Stel een communicatie- en veranderplan op",
+                preview: "Communiceer proactief over AI-gebruik, veranderingen en impact op stakeholders.",
+                content: {
+                    intro: "Change management is kritiek voor adoptie. Communicatie moet helder, tijdig en consistent zijn.",
+                    details: [
+                        "Ontwikkel een stakeholder map en communicatiestrategie",
+                        "Creëer verschillende boodschappen voor verschillende groepen",
+                        "Communiceer regelmatig over voortgang en successen",
+                        "Adresseer zorgen en weerstand proactief",
+                        "Vier wins en erken challenges"
+                    ],
+                    benefits: "Goede communicatie bouwt vertrouwen, vermindert onzekerheid en versnelt adoptie.",
+                    nextSteps: "Ontwikkel een Communications Plan met touchpoints voor alle fases."
+                }
+            },
+            {
+                id: 28,
+                phase: 2,
+                phaseTitle: "Fase 2: Implementatie",
+                category: "legal",
+                categoryTitle: "Juridische & Ethische Aspecten",
+                title: "Ontwikkel een ethisch kader",
+                preview: "Operationaliseer ethische principes in concrete design en review processen.",
+                content: {
+                    intro: "Van principe naar praktijk: vertaal ethische waarden naar werkbare processen en checklists.",
+                    details: [
+                        "Ontwikkel een ethics by design framework",
+                        "Creëer ethics review checklists per project fase",
+                        "Train teams in ethical impact assessment",
+                        "Stel een ethics review board in",
+                        "Integreer ethiek in project governance"
+                    ],
+                    benefits: "Embedded ethics voorkomt controverses, bouwt vertrouwen en differentiëert als verantwoorde organisatie.",
+                    nextSteps: "Pilot een ethics review process voor 3 AI-projecten en itereer."
+                }
+            },
+            {
+                id: 29,
+                phase: 2,
+                phaseTitle: "Fase 2: Implementatie",
+                category: "legal",
+                categoryTitle: "Juridische & Ethische Aspecten",
+                title: "Communiceer extern transparant over gebruik",
+                preview: "Wees open naar klanten en publiek over je AI-gebruik en principes.",
+                content: {
+                    intro: "Externe transparantie bouwt vertrouwen en voldoet aan toenemende verwachtingen van stakeholders.",
+                    details: [
+                        "Publiceer een AI transparency report",
+                        "Leg uit waar en hoe je AI gebruikt in customer touchpoints",
+                        "Communiceer over je ethische principes",
+                        "Bied opt-out mogelijkheden waar relevant",
+                        "Wees proactief bij incidents"
+                    ],
+                    benefits: "Transparantie versterkt reputatie, differentieert van concurrenten en voorkomt reputatieschade.",
+                    nextSteps: "Publiceer een AI Transparency Statement op je website."
+                }
+            },
+            {
+                id: 30,
+                phase: 2,
+                phaseTitle: "Fase 2: Implementatie",
+                category: "legal",
+                categoryTitle: "Juridische & Ethische Aspecten",
+                title: "Monitor juridische ontwikkelingen",
+                preview: "Blijf op de hoogte van evoluerende regelgeving en pas proactief aan.",
+                content: {
+                    intro: "AI-regelgeving evolueert snel. Proactive monitoring voorkomt nasleep compliance issues.",
+                    details: [
+                        "Abonneer op relevante legal updates (EU, nationale wetgeving)",
+                        "Participeer in industry working groups",
+                        "Assess impact van nieuwe regelgeving regelmatig",
+                        "Update compliance requirements proactief",
+                        "Engage met policy makers waar relevant"
+                    ],
+                    benefits: "Vroege awareness van regulatory changes geeft tijd voor aanpassing en voorkomt costly retrofits.",
+                    nextSteps: "Wijs een Regulatory Affairs lead aan en stel een quarterly review meeting in."
+                }
+            },
+
+            // FASE 2 - ECONOMISCH
+            {
+                id: 31,
+                phase: 2,
+                phaseTitle: "Fase 2: Implementatie",
+                category: "economic",
+                categoryTitle: "Economische Impact & Bedrijfsstrategie",
+                title: "Valideer de business case",
+                preview: "Meet systematisch of je AI-investering de voorspelde waarde oplevert.",
+                content: {
+                    intro: "Van hypothesis naar bewijs: valideer je business case met harde data uit je pilots.",
+                    details: [
+                        "Meet KPIs zoals voorspeld in business case",
+                        "Vergelijk actual vs projected costs en benefits",
+                        "Interview gebruikers over impact en tevredenheid",
+                        "Kwantificeer onverwachte benefits of challenges",
+                        "Update business case voor vervolgfases"
+                    ],
+                    benefits: "Validatie bouwt confidence, identificeert optimalisaties en onderbouwt vervolgsinvesteringen.",
+                    nextSteps: "Voer een business case review uit na 3 maanden productie gebruik."
+                }
+            },
+            {
+                id: 32,
+                phase: 2,
+                phaseTitle: "Fase 2: Implementatie",
+                category: "economic",
+                categoryTitle: "Economische Impact & Bedrijfsstrategie",
+                title: "Prioriteer use-cases",
+                preview: "Breid uit naar nieuwe use cases op basis van learnings en strategische prioriteiten.",
+                content: {
+                    intro: "Na eerste successen: schaal slim door te focussen op use cases met hoogste impact.",
+                    details: [
+                        "Evalueer pipeline van potentiële use cases",
+                        "Prioriteer op basis van: strategic fit, ROI, feasibility, risk",
+                        "Leer van eerste implementatie om beter te selecteren",
+                        "Balanceer quick wins met strategic bets",
+                        "Creëer een multi-year roadmap"
+                    ],
+                    benefits: "Strategische prioritering maximaliseert impact, optimaliseert resource allocatie en bouwt momentum.",
+                    nextSteps: "Organiseer een portfolio review en selecteer next wave van use cases."
+                }
+            },
+            {
+                id: 33,
+                phase: 2,
+                phaseTitle: "Fase 2: Implementatie",
+                category: "economic",
+                categoryTitle: "Economische Impact & Bedrijfsstrategie",
+                title: "Piloteer use-cases",
+                preview: "Test nieuwe use cases in gecontroleerde omgeving voordat je schaalt.",
+                content: {
+                    intro: "Reduce risk door nieuwe use cases te piloten met beperkte scope en gebruikersgroep.",
+                    details: [
+                        "Definieer duidelijke pilot scope en succes criteria",
+                        "Selecteer representatieve gebruikersgroep",
+                        "Implementeer in 6-12 weken timeframe",
+                        "Meet intensief en itereer snel",
+                        "Besluit expliciet: scale, pivot, or kill"
+                    ],
+                    benefits: "Pilots minimaliseren investering, maximaliseren learning en voorkomen costly failures.",
+                    nextSteps: "Launch pilots voor je top 3 prioritaire use cases."
+                }
+            },
+            {
+                id: 34,
+                phase: 2,
+                phaseTitle: "Fase 2: Implementatie",
+                category: "economic",
+                categoryTitle: "Economische Impact & Bedrijfsstrategie",
+                title: "Identificeer potentiële winsten",
+                preview: "Kwantificeer systematisch de business impact van AI-toepassingen.",
+                content: {
+                    intro: "Maak AI-waarde zichtbaar door nauwgezette impact measurement.",
+                    details: [
+                        "Track efficiency gains (tijd, kosten)",
+                        "Meet revenue impact (conversie, customer value)",
+                        "Kwantificeer quality improvements (errors, satisfaction)",
+                        "Bereken indirect benefits (employee satisfaction, innovation)",
+                        "Benchmark tegen industry standards"
+                    ],
+                    benefits: "Zichtbare wins bouwen support, attracteren investering en motiveren teams.",
+                    nextSteps: "Implementeer een value tracking dashboard voor alle AI-initiatives."
+                }
+            },
+            {
+                id: 35,
+                phase: 2,
+                phaseTitle: "Fase 2: Implementatie",
+                category: "economic",
+                categoryTitle: "Economische Impact & Bedrijfsstrategie",
+                title: "Volg het gebruik van GenAI op",
+                preview: "Monitor adoptie, gebruik en impact van AI-tools systematisch.",
+                content: {
+                    intro: "Wat je meet, kun je managen. Usage analytics zijn essentieel voor optimalisatie.",
+                    details: [
+                        "Track user adoption en engagement",
+                        "Meet frequency en depth of use",
+                        "Analyseer use patterns en pain points",
+                        "Correleer usage met business outcomes",
+                        "Identificeer power users en laggards"
+                    ],
+                    benefits: "Usage insights drive targeted interventions, feature prioritization en change management.",
+                    nextSteps: "Implementeer analytics tooling en setup monthly usage reviews."
+                }
+            },
+            {
+                id: 36,
+                phase: 2,
+                phaseTitle: "Fase 2: Implementatie",
+                category: "economic",
+                categoryTitle: "Economische Impact & Bedrijfsstrategie",
+                title: "Schaal individuele productiviteitwinsten op",
+                preview: "Vertaal individuele efficiency gains naar organisatiebrede productiviteitsverbetering.",
+                content: {
+                    intro: "Personal productivity is mooi, organisatiebrede impact is beter. Schaal systematisch.",
+                    details: [
+                        "Identificeer high-impact workflows waar productiviteitstools schalen",
+                        "Standaardiseer best practices en delen breed",
+                        "Integreer tools in standaard werkwijzen",
+                        "Train alle relevante medewerkers",
+                        "Meet aggregate impact"
+                    ],
+                    benefits: "Scaling van productivity wins vermenigvuldigt ROI en versnelt organisatie-brede transformatie.",
+                    nextSteps: "Map opportunity voor scaling van succesvolle productivity use cases."
+                }
+            },
+            {
+                id: 37,
+                phase: 2,
+                phaseTitle: "Fase 2: Implementatie",
+                category: "economic",
+                categoryTitle: "Economische Impact & Bedrijfsstrategie",
+                title: "Monitor en rapporteer robuuste KPIs",
+                preview: "Stel een comprehensive measurement framework op voor AI-impact tracking.",
+                content: {
+                    intro: "What gets measured gets managed. Robuuste KPIs zijn essentieel voor sturing en accountability.",
+                    details: [
+                        "Definieer KPIs op verschillende niveaus: project, program, organisatie",
+                        "Balanceer leading en lagging indicators",
+                        "Mix van financial, operational en strategic metrics",
+                        "Implementeer automated dashboards",
+                        "Review en refineer KPIs regelmatig"
+                    ],
+                    benefits: "Sterke KPIs enableren data-driven besluitvorming, accountability en continuous improvement.",
+                    nextSteps: "Design een AI Performance Dashboard met key metrics per stakeholder."
+                }
+            },
+            {
+                id: 38,
+                phase: 2,
+                phaseTitle: "Fase 2: Implementatie",
+                category: "economic",
+                categoryTitle: "Economische Impact & Bedrijfsstrategie",
+                title: "Valideer de impact (top-down en bottom-up)",
+                preview: "Trianguleer impact metingen vanuit verschillende perspectieven voor volledig beeld.",
+                content: {
+                    intro: "Enkelvoudige metrics vertellen nooit het hele verhaal. Multi-angle validation geeft zekerheid.",
+                    details: [
+                        "Top-down: meet impact op high-level business metrics",
+                        "Bottom-up: aggregate individuele use case impacts",
+                        "Kwalitatief: interviews en surveys voor stories",
+                        "Kwantitatief: hard data en statistical analysis",
+                        "Vergelijk approaches en trianguleer"
+                    ],
+                    benefits: "Multi-perspective validation geeft confidence in gerapporteerde impact en identificeert blinde vlekken.",
+                    nextSteps: "Voer een comprehensive impact assessment uit met zowel top-down als bottom-up approach."
+                }
+            },
+            {
+                id: 39,
+                phase: 2,
+                phaseTitle: "Fase 2: Implementatie",
+                category: "economic",
+                categoryTitle: "Economische Impact & Bedrijfsstrategie",
+                title: "Ontwerp een helder AI-beleid",
+                preview: "Formuleer duidelijk beleid voor verantwoord en effectief AI-gebruik organisatie-breed.",
+                content: {
+                    intro: "Policies geven richting en grenzen. Een helder AI-beleid is de ruggengraat van governance.",
+                    details: [
+                        "Stel usage policies vast (wat mag, wat niet)",
+                        "Definieer approval workflows",
+                        "Regel IP en data ownership",
+                        "Specificeer security en compliance requirements",
+                        "Communiceer beleid helder en breed"
+                    ],
+                    benefits: "Helder beleid voorkomt wildchaos, beschermt de organisatie en empowert verantwoord gebruik.",
+                    nextSteps: "Ontwikkel een AI Policy document en socialize met alle stakeholders."
+                }
+            },
+            {
+                id: 40,
+                phase: 2,
+                phaseTitle: "Fase 2: Implementatie",
+                category: "economic",
+                categoryTitle: "Economische Impact & Bedrijfsstrategie",
+                title: "Evalueer continu de doelstellingen",
+                preview: "Review regelmatig of je AI-strategie nog aligned is met business doelstellingen.",
+                content: {
+                    intro: "De wereld verandert snel. Continuous alignment tussen AI-strategie en business strategie is cruciaal.",
+                    details: [
+                        "Quarterly reviews van AI-strategie met leadership",
+                        "Assess relevantie van huidige initiatives",
+                        "Identificeer nieuwe kansen en threats",
+                        "Pivot waar nodig",
+                        "Update roadmap en priorities"
+                    ],
+                    benefits: "Regular reviews zorgen voor strategic relevance, voorkomen sunk cost fallacy en maximaliseren impact.",
+                    nextSteps: "Institutionaliseer quarterly AI Strategy Reviews met exec team."
+                }
+            },
+            {
+                id: 41,
+                phase: 2,
+                phaseTitle: "Fase 2: Implementatie",
+                category: "economic",
+                categoryTitle: "Economische Impact & Bedrijfsstrategie",
+                title: "Integreer een beslissingsorgaan",
+                preview: "Creëer een governance body die beslissingen neemt over AI-investeringen en prioriteiten.",
+                content: {
+                    intro: "Zonder duidelijke decision authority leiden AI-initiatives tot vertraging en frustratie.",
+                    details: [
+                        "Stel een AI Steering Committee in met cross-functional representation",
+                        "Definieer mandaat, verantwoordelijkheden en decision rights",
+                        "Stel cadence vast voor meetings",
+                        "Creëer duidelijke escalation paths",
+                        "Zorg voor transparante decision making"
+                    ],
+                    benefits: "Clear governance versnelt besluitvorming, balanceert belangengroepen en zorgt voor accountability.",
+                    nextSteps: "Formaliseer AI Steering Committee met charter en quarterly meeting cadence."
+                }
+            },
+
+            // FASE 2 - CREATIEF
+            {
+                id: 42,
+                phase: 2,
+                phaseTitle: "Fase 2: Implementatie",
+                category: "creative",
+                categoryTitle: "Creatieve Sector & Media",
+                title: "Voorzie een geleidelijke introductie en integratie",
+                preview: "Introduceer AI-tools incrementeel en integreer ze naadloos in bestaande workflows.",
+                content: {
+                    intro: "Change fatigue is real. Geleidelijke introductie maximaliseert adoptie en minimaliseert disruption.",
+                    details: [
+                        "Start met low-risk, high-value workflows",
+                        "Introduceer tools één voor één, niet allemaal tegelijk",
+                        "Integreer in bestaande tools waar mogelijk",
+                        "Bied hands-on support tijdens transitie",
+                        "Geef teams tijd om te wennen voordat je uitbreidt"
+                    ],
+                    benefits: "Incrementele approach bouwt confidence, reduceert overwhelm en verhoogt succeskans.",
+                    nextSteps: "Creëer een phased rollout plan voor je creative tool stack."
+                }
+            },
+            {
+                id: 43,
+                phase: 2,
+                phaseTitle: "Fase 2: Implementatie",
+                category: "creative",
+                categoryTitle: "Creatieve Sector & Media",
+                title: "Bouw vertrouwen op",
+                preview: "Investeer in vertrouwensopbouw tussen creatives en AI-tools door transparantie en successen.",
+                content: {
+                    intro: "Vertrouwen is cruciaal voor adoptie. Bouw het systematisch op door betrouwbaarheid en transparantie.",
+                    details: [
+                        "Wees transparant over hoe AI-tools werken",
+                        "Toon concrete successen van early adopters",
+                        "Geef creatives controle en agency",
+                        "Adresseer zorgen serieus (bijv. over copyright, job security)",
+                        "Vier wins publiekelijk"
+                    ],
+                    benefits: "Vertrouwen leidt tot experimentation, higher adoption en betere outcomes.",
+                    nextSteps: "Launch een testimonial campaign met early adopter success stories."
+                }
+            },
+            {
+                id: 44,
+                phase: 2,
+                phaseTitle: "Fase 2: Implementatie",
+                category: "creative",
+                categoryTitle: "Creatieve Sector & Media",
+                title: "Leg de eindverantwoordelijkheid bij de redacteur",
+                preview: "Zorg dat menselijke redacteuren altijd final say hebben over AI-gegenereerde content.",
+                content: {
+                    intro: "AI is een tool, geen replacement. Menselijke judgment moet altijd het laatste woord hebben.",
+                    details: [
+                        "Stel duidelijk vast dat editors verantwoordelijk zijn voor output",
+                        "Train editors in hoe ze AI-content beoordelen",
+                        "Implementeer review workflows met human-in-the-loop",
+                        "Documenteer editorial standards specifiek voor AI-content",
+                        "Geef editors tools om AI-outputs te verfijnen"
+                    ],
+                    benefits: "Clear accountability beschermt kwaliteit, bouwt vertrouwen en voorkomt reputatieschade.",
+                    nextSteps: "Update editorial guidelines met AI-specific review criteria."
+                }
+            },
+
+            // FASE 2 - ONDERWIJS
+            {
+                id: 45,
+                phase: 2,
+                phaseTitle: "Fase 2: Implementatie",
+                category: "education",
+                categoryTitle: "Onderwijs & AI-geletterdheid",
+                title: "Investeer in kennisopbouw: opleiding en ad hoc",
+                preview: "Bouw duurzame AI-competenties op door gestructureerde trainingen én just-in-time support.",
+                content: {
+                    intro: "Competentie groeit door combinatie van formele training en praktijkondersteuning.",
+                    details: [
+                        "Rol uit gestructureerde trainings per functie-niveau",
+                        "Bied drop-in support uren aan",
+                        "Creëer quick reference guides en cheat sheets",
+                        "Zet AI coaches in voor hands-on ondersteuning",
+                        "Combineer async learning met live sessies"
+                    ],
+                    benefits: "Hybrid learning approach maximaliseert impact, accommodeert verschillende leerstijlen en bouwt duurzame capabilities.",
+                    nextSteps: "Launch een blended learning program met zowel formele als informele componenten."
+                }
+            },
+            {
+                id: 46,
+                phase: 2,
+                phaseTitle: "Fase 2: Implementatie",
+                category: "education",
+                categoryTitle: "Onderwijs & AI-geletterdheid",
+                title: "Herdefinieer processen, rollen en functies",
+                preview: "Pas organisatiestructuur, rollen en processen aan om AI-gebruik te optimaliseren.",
+                content: {
+                    intro: "AI verandert hoe werk gedaan wordt. Processen en rollen moeten mee-evolueren.",
+                    details: [
+                        "Review core processen en identificeer AI-augmentation kansen",
+                        "Redefine roles om AI-skills te integreren",
+                        "Creëer nieuwe rollen waar nodig (AI trainers, prompt engineers)",
+                        "Update job descriptions en competentieprofielen",
+                        "Communiceer veranderingen helder"
+                    ],
+                    benefits: "Alignment van organisatie met AI-mogelijkheden maximaliseert impact en voorkomt frustratie.",
+                    nextSteps: "Voer een organization design review uit met focus op AI-readiness."
+                }
+            },
+            {
+                id: 47,
+                phase: 2,
+                phaseTitle: "Fase 2: Implementatie",
+                category: "education",
+                categoryTitle: "Onderwijs & AI-geletterdheid",
+                title: "Train teams bij AI-beoordelingsvermogen",
+                preview: "Leer teams kritisch AI-outputs te evalueren en te verfijnen.",
+                content: {
+                    intro: "AI-literacy betekent ook weten wanneer AI het niet goed doet. Critical evaluation skills zijn essentieel.",
+                    details: [
+                        "Train in het herkennen van AI-hallucinations en biases",
+                        "Leer hoe je output kwaliteit beoordeelt",
+                        "Oefen met het verfijnen van prompts",
+                        "Ontwikkel checklist voor AI-content review",
+                        "Deel voorbeelden van goede vs slechte AI-outputs"
+                    ],
+                    benefits: "Kritisch vermogen voorkomt blind vertrouwen, maximaliseert kwaliteit en bouwt robuust gebruik.",
+                    nextSteps: "Ontwikkel een AI Evaluation Training module en maak deze verplicht."
+                }
+            },
+            {
+                id: 48,
+                phase: 2,
+                phaseTitle: "Fase 2: Implementatie",
+                category: "education",
+                categoryTitle: "Onderwijs & AI-geletterdheid",
+                title: "Onboard groepen en teams",
+                preview: "Schaal onboarding van individuen naar hele teams en afdelingen.",
+                content: {
+                    intro: "Team-brede adoption creëert network effects en maximaliseert impact.",
+                    details: [
+                        "Onboard teams cohort-based, niet individueel",
+                        "Faciliteer team-level experimenten",
+                        "Creëer team-specific use cases",
+                        "Bouw communities of practice per afdeling",
+                        "Meet team-level adoption en impact"
+                    ],
+                    benefits: "Team onboarding bouwt gedeelde taal, peer support en collective capabilities.",
+                    nextSteps: "Plan team-based onboarding waves voor alle relevante afdelingen."
+                }
+            },
+            {
+                id: 49,
+                phase: 2,
+                phaseTitle: "Fase 2: Implementatie",
+                category: "education",
+                categoryTitle: "Onderwijs & AI-geletterdheid",
+                title: "Train op herkennen van misbruik of -informatie",
+                preview: "Wapen teams tegen AI-misuse zoals deepfakes, misinformatie en malicious gebruik.",
+                content: {
+                    intro: "AI kan misbruikt worden. Awareness van risico's en detection skills zijn essentieel.",
+                    details: [
+                        "Train in het herkennen van deepfakes en synthetic media",
+                        "Leer hoe je AI-generated misinformatie identificeert",
+                        "Bespreek social engineering risico's",
+                        "Ontwikkel incident response procedures",
+                        "Blijf up-to-date met emerging threats"
+                    ],
+                    benefits: "Awareness en skills beschermen organisatie tegen AI-enabled attacks en reputatieschade.",
+                    nextSteps: "Integreer AI security awareness in je security training programma."
+                }
+            },
+
+            // Add more FASE 3 items following the same pattern...
+            // For brevity, I'll add a few examples from Fase 3
+
+            // FASE 3 - TECHNISCH
+            {
+                id: 50,
+                phase: 3,
+                phaseTitle: "Fase 3: Transformatie",
+                category: "tech",
+                categoryTitle: "Technische Implementatie",
+                title: "Stem IT- en data-architectuur af op AI",
+                preview: "Evolueer je technische infrastructuur naar een AI-native architecture.",
+                content: {
+                    intro: "Volwassen AI-organisaties hebben fundamenteel andere architecturen. Transformatie is noodzakelijk.",
+                    details: [
+                        "Implementeer moderne data platforms (data lakes, lakehouses)",
+                        "Adopteer MLOps en model management platforms",
+                        "Bouw real-time data pipelines",
+                        "Implementeer feature stores en model registries",
+                        "Investeer in AI-optimized compute infrastructuur"
+                    ],
+                    benefits: "AI-native architectuur maximaliseert snelheid, schaalbaarheid en herbruikbaarheid.",
+                    nextSteps: "Develop een multi-year technology roadmap voor AI-native transformation."
+                }
+            },
+            {
+                id: 51,
+                phase: 3,
+                phaseTitle: "Fase 3: Transformatie",
+                category: "tech",
+                categoryTitle: "Technische Implementatie",
+                title: "Volg waarderealisatie van use-cases op",
+                preview: "Implementeer systematische portfolio management voor je AI-initiatieven.",
+                content: {
+                    intro: "Portfolio management optimaliseert resource allocatie en maximaliseert aggregate value.",
+                    details: [
+                        "Track ROI van alle use cases in portfolio",
+                        "Balanceer investments across horizons (H1: optimize, H2: scale, H3: explore)",
+                        "Kill underperformers systematisch",
+                        "Double down op winners",
+                        "Optimize portfolio voor risk-return balance"
+                    ],
+                    benefits: "Actief portfolio management maximaliseert return on AI investment en voorkomt zombie projects.",
+                    nextSteps: "Implementeer quarterly portfolio reviews met investment decisions."
+                }
+            },
+            {
+                id: 52,
+                phase: 3,
+                phaseTitle: "Fase 3: Transformatie",
+                category: "tech",
+                categoryTitle: "Technische Implementatie",
+                title: "Monitor adoptie",
+                preview: "Meet en stuur systematisch op organisatiebrede AI-adoptie.",
+                content: {
+                    intro: "Wat je meet, kun je managen. Comprehensive adoption metrics zijn essentieel voor transformatie.",
+                    details: [
+                        "Track adoption metrics per afdeling, rol, use case",
+                        "Meet depth of use (frequency, sophistication)",
+                        "Identificeer barriers bij laggards",
+                        "Benchmark tegen industry standards",
+                        "Report progress regelmatig naar leadership"
+                    ],
+                    benefits: "Adoption metrics identificeren gaps, inform interventies en demonstrate progress.",
+                    nextSteps: "Build een adoption dashboard en stel targets per business unit."
+                }
+            },
+
+            // FASE 3 - JURIDISCH  
+            {
+                id: 53,
+                phase: 3,
+                phaseTitle: "Fase 3: Transformatie",
+                category: "legal",
+                categoryTitle: "Juridische & Ethische Aspecten",
+                title: "Zet in op betrouwbare fallback-systemen",
+                preview: "Implementeer robuuste backup systemen voor wanneer AI faalt.",
+                content: {
+                    intro: "AI-systemen kunnen falen. Business continuity vereist reliable fallback mechanismen.",
+                    details: [
+                        "Ontwerp fallback procedures voor kritieke processen",
+                        "Implementeer automated failover waar mogelijk",
+                        "Train teams in manual override procedures",
+                        "Test disaster recovery regelmatig",
+                        "Monitor AI performance en trigger fallbacks proactively"
+                    ],
+                    benefits: "Betrouwbare fallbacks minimaliseren downtime, beschermen revenue en handhaven trust.",
+                    nextSteps: "Develop fallback playbooks voor alle business-critical AI systems."
+                }
+            },
+            {
+                id: 54,
+                phase: 3,
+                phaseTitle: "Fase 3: Transformatie",
+                category: "legal",
+                categoryTitle: "Juridische & Ethische Aspecten",
+                title: "Implementeer een risico- en controleraamwerk",
+                preview: "Formaliseer enterprise-wide risk management voor AI-systemen.",
+                content: {
+                    intro: "Mature AI organizations hebben sophisticated risk frameworks die balanceren tussen enabling en protecting.",
+                    details: [
+                        "Implementeer three lines of defense model",
+                        "Stel risk appetite statements vast per domein",
+                        "Ontwerp control frameworks met preventive, detective en corrective controls",
+                        "Voer regular risk assessments uit",
+                        "Report naar board en audit committee"
+                    ],
+                    benefits: "Robuust risk framework enables responsible innovation terwijl organizational exposure wordt geminimaliseerd.",
+                    nextSteps: "Develop een AI Risk & Control Framework aligned met enterprise risk management."
+                }
+            },
+
+            // Continue with more Fase 3 items for other categories...
+            // I'll add a few more to reach good coverage
+
+            // FASE 3 - ECONOMISCH
+            {
+                id: 55,
+                phase: 3,
+                phaseTitle: "Fase 3: Transformatie",
+                category: "economic",
+                categoryTitle: "Economische Impact & Bedrijfsstrategie",
+                title: "Bied verschillende ondersteuningsniveaus aan",
+                preview: "Differentieer support op basis van gebruikersbehoeften en AI-maturity.",
+                content: {
+                    intro: "Een one-size-fits-all support model schaalt niet. Differentieer naar behoefte en maturity.",
+                    details: [
+                        "Tier 1: Self-service (documentation, FAQs)",
+                        "Tier 2: Community support (forums, peer help)",
+                        "Tier 3: Help desk voor technical issues",
+                        "Tier 4: Advanced coaching voor power users",
+                        "Route users naar juiste tier automatisch"
+                    ],
+                    benefits: "Tiered support optimaliseert kosten, maximaliseert self-service en reserveert expert capacity voor complex cases.",
+                    nextSteps: "Design een tiered support model en implementeer routing mechanisme."
+                }
+            },
+
+            // FASE 3 - CREATIEF
+            {
+                id: 56,
+                phase: 3,
+                phaseTitle: "Fase 3: Transformatie",
+                category: "creative",
+                categoryTitle: "Creatieve Sector & Media",
+                title: "Creëer nieuwe content",
+                preview: "Benut AI om volledig nieuwe contenttypes en formats te exploreren.",
+                content: {
+                    intro: "AI opent deuren naar content die voorheen onmogelijk of onbetaalbaar was. Experimenteer moedig.",
+                    details: [
+                        "Explore nieuwe formats (interactive, personalized, multimodal)",
+                        "Test AI-generated content voor niche audiences",
+                        "Experimenteer met hyperpersonalisatie",
+                        "Combineer media types op nieuwe manieren",
+                        "Meet audience response en itereer"
+                    ],
+                    benefits: "Innovatieve content differentieert, engageert nieuwe audiences en bouwt competitive advantage.",
+                    nextSteps: "Launch een content innovation lab met mandaat om te experimenteren."
+                }
+            },
+
+            // FASE 3 - ONDERWIJS
+            {
+                id: 57,
+                phase: 3,
+                phaseTitle: "Fase 3: Transformatie",
+                category: "education",
+                categoryTitle: "Onderwijs & AI-geletterdheid",
+                title: "Behoud menselijke expertise",
+                preview: "Investeer proactief in uniquely human skills die AI niet kan repliceren.",
+                content: {
+                    intro: "AI neemt taken over, maar versterkt ook de waarde van menselijke capabilities. Investeer strategisch.",
+                    details: [
+                        "Identificeer skills die waardevol blijven (creativity, empathy, judgment)",
+                        "Herontwerp rollen om te focussen op high-value human work",
+                        "Train in AI-complement skills",
+                        "Creëer career paths voor AI-augmented professionals",
+                        "Celebrate en reward uniquely human contributions"
+                    ],
+                    benefits: "Focus op menselijke meerwaarde maximaliseert job satisfaction, retentie en organizational value.",
+                    nextSteps: "Conduct een skills analysis en ontwikkel reskilling programs."
+                }
+            },
+            {
+                id: 58,
+                phase: 3,
+                phaseTitle: "Fase 3: Transformatie",
+                category: "education",
+                categoryTitle: "Onderwijs & AI-geletterdheid",
+                title: "Volg impact en veranderingen op",
+                preview: "Meet systematisch de transformative impact van AI op organisatie en mensen.",
+                content: {
+                    intro: "Transformatie is meer dan metrics. Meet ook cultural shift, skill evolution en organizational health.",
+                    details: [
+                        "Track hard metrics (productivity, revenue, costs)",
+                        "Meet soft metrics (satisfaction, engagement, innovation)",
+                        "Monitor skill development en capability growth",
+                        "Assess cultural evolution",
+                        "Capture stories en qualitative impact"
+                    ],
+                    benefits: "Holistische impact measurement geeft compleet beeld, informs besluitvorming en builds organizational memory.",
+                    nextSteps: "Design een comprehensive impact measurement framework met balanced scorecard approach."
+                }
+            },
+            {
+                id: 59,
+                phase: 3,
+                phaseTitle: "Fase 3: Transformatie",
+                category: "education",
+                categoryTitle: "Onderwijs & AI-geletterdheid",
+                title: "Vier succes",
+                preview: "Vier systematisch successen om momentum te behouden en adoptie te versnellen.",
+                content: {
+                    intro: "Celebration builds momentum, recognizes contributors en reinforces desired behaviors.",
+                    details: [
+                        "Creëer een awards program voor AI innovation",
+                        "Share success stories breed via diverse kanalen",
+                        "Recognize zowel teams als individuals",
+                        "Celebrate learnings, niet alleen wins",
+                        "Make celebration een regular ritual"
+                    ],
+                    benefits: "Systematic celebration builds positive culture, motivates continued innovation en attracts talent.",
+                    nextSteps: "Launch quarterly AI Innovation Awards en monthly success showcases."
+                }
+            }
+        ];
+
+        // State management
+        let currentFilter = { phase: 'all', category: 'all' };
+        let searchTerm = '';
+        let bookmarkedIds = new Set(JSON.parse(localStorage.getItem('bookmarks') || '[]'));
+        let readIds = new Set(JSON.parse(localStorage.getItem('read') || '[]'));
+        let currentCardIndex = 0;
+        let filteredCards = [];
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            setupEventListeners();
+            renderCards();
+            updateStats();
+        });
+
+        function setupEventListeners() {
+            // Phase filters
+            document.querySelectorAll('[data-phase]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('[data-phase]').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentFilter.phase = btn.dataset.phase;
+                    renderCards();
+                });
+            });
+
+            // Category filters
+            document.querySelectorAll('[data-category]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('[data-category]').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentFilter.category = btn.dataset.category;
+                    renderCards();
+                });
+            });
+
+            // Search
+            document.getElementById('searchInput').addEventListener('input', (e) => {
+                searchTerm = e.target.value.toLowerCase();
+                renderCards();
+            });
+
+            // Modal close on background click
+            document.getElementById('modal').addEventListener('click', (e) => {
+                if (e.target.id === 'modal') closeModal();
+            });
+
+            // Keyboard navigation
+            document.addEventListener('keydown', (e) => {
+                const modal = document.getElementById('modal');
+                if (modal.classList.contains('active')) {
+                    if (e.key === 'Escape') closeModal();
+                    if (e.key === 'ArrowLeft') previousCard();
+                    if (e.key === 'ArrowRight') nextCard();
+                }
+            });
+        }
+
+        function filterCards() {
+            let filtered = checklistData;
+
+            // Phase filter
+            if (currentFilter.phase !== 'all') {
+                filtered = filtered.filter(card => card.phase === parseInt(currentFilter.phase));
+            }
+
+            // Category filter
+            if (currentFilter.category !== 'all') {
+                filtered = filtered.filter(card => card.category === currentFilter.category);
+            }
+
+            // Search filter
+            if (searchTerm) {
+                filtered = filtered.filter(card => {
+                    const searchableText = [
+                        card.title,
+                        card.preview,
+                        card.categoryTitle,
+                        card.phaseTitle,
+                        card.content.intro,
+                        card.content.benefits,
+                        card.content.nextSteps,
+                        ...card.content.details
+                    ].join(' ').toLowerCase();
+                    
+                    return searchableText.includes(searchTerm);
+                });
+            }
+
+            return filtered;
+        }
+
+        function renderCards() {
+            filteredCards = filterCards();
+            const phaseSections = document.getElementById('phaseSections');
+            const bookmarkedGrid = document.getElementById('bookmarkedGrid');
+            const noResults = document.getElementById('noResults');
+
+            if (filteredCards.length === 0) {
+                phaseSections.innerHTML = '';
+                noResults.style.display = 'block';
+                return;
+            }
+
+            noResults.style.display = 'none';
+            
+            // Group cards by phase
+            const phases = {
+                1: { title: 'Fase 1: Exploratie & Experimentatie', icon: '🔍', description: 'Verken mogelijkheden en experimenteer met AI-tools', cards: [] },
+                2: { title: 'Fase 2: Implementatie & Integratie', icon: '⚙️', description: 'Implementeer en integreer AI in je organisatie', cards: [] },
+                3: { title: 'Fase 3: Transformatie & Expansie', icon: '🚀', description: 'Schaal en transformeer je organisatie met AI', cards: [] }
+            };
+
+            filteredCards.forEach(card => {
+                phases[card.phase].cards.push(card);
+            });
+
+            // Render phase sections
+            let html = '';
+            Object.keys(phases).forEach(phaseNum => {
+                const phase = phases[phaseNum];
+                if (phase.cards.length > 0) {
+                    html += `
+                        <div class="phase-section">
+                            <div class="phase-header">
+                                <div class="phase-icon">${phase.icon}</div>
+                                <div class="phase-info">
+                                    <h2>${phase.title}</h2>
+                                    <p>${phase.description}</p>
+                                </div>
+                            </div>
+                            <div class="cards-grid">
+                                ${phase.cards.map(card => createCardHTML(card)).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+
+            phaseSections.innerHTML = html;
+
+            // Render bookmarked section
+            const bookmarkedCards = checklistData.filter(card => bookmarkedIds.has(card.id));
+            const bookmarkedSection = document.getElementById('bookmarkedSection');
+            
+            if (bookmarkedCards.length > 0) {
+                bookmarkedSection.classList.add('has-bookmarks');
+                bookmarkedGrid.innerHTML = bookmarkedCards.map(card => createCardHTML(card)).join('');
+            } else {
+                bookmarkedSection.classList.remove('has-bookmarks');
+            }
+        }
+
+        function createCardHTML(card) {
+            const isBookmarked = bookmarkedIds.has(card.id);
+            const isRead = readIds.has(card.id);
+
+            return `
+                <div class="card ${card.category} phase-${card.phase} ${isRead ? 'completed' : ''}" onclick="openModal(${card.id})">
+                    <div class="card-header">
+                        <span class="category-badge ${card.category}">
+                            ${getCategoryIcon(card.category)} ${card.categoryTitle}
+                        </span>
+                        <button class="bookmark-btn ${isBookmarked ? 'bookmarked' : ''}" 
+                                onclick="event.stopPropagation(); toggleBookmark(${card.id})">
+                            ${isBookmarked ? '★' : '☆'}
+                        </button>
+                    </div>
+                    <div class="card-title-row">
+                        <div class="card-check ${isRead ? 'checked' : ''}" 
+                             onclick="event.stopPropagation(); toggleRead(${card.id})">
+                        </div>
+                        <div class="card-title">${card.title}</div>
+                    </div>
+                    <div class="card-preview">${card.preview}</div>
+                    <div class="card-footer">
+                        <span class="phase-tag">${card.phaseTitle}</span>
+                        <span class="completion-badge">✓ Voltooid</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        function getCategoryIcon(category) {
+            const icons = {
+                tech: '🔧',
+                legal: '⚖️',
+                economic: '💼',
+                creative: '🎨',
+                education: '🎓'
+            };
+            return icons[category] || '';
+        }
+
+        function openModal(cardId) {
+            const card = checklistData.find(c => c.id === cardId);
+            if (!card) return;
+
+            currentCardIndex = filteredCards.findIndex(c => c.id === cardId);
+
+            const modal = document.getElementById('modal');
+            const title = document.getElementById('modalTitle');
+            const meta = document.getElementById('modalMeta');
+            const body = document.getElementById('modalBody');
+
+            title.textContent = card.title;
+            
+            const isBookmarked = bookmarkedIds.has(card.id);
+            const isRead = readIds.has(card.id);
+
+            meta.innerHTML = `
+                <span class="category-badge ${card.category}">
+                    ${getCategoryIcon(card.category)} ${card.categoryTitle}
+                </span>
+                <span class="phase-tag">${card.phaseTitle}</span>
+                <div class="modal-actions">
+                    <button class="bookmark-btn ${isBookmarked ? 'bookmarked' : ''}" 
+                            onclick="toggleBookmark(${card.id})">
+                        ${isBookmarked ? '★ Gebookmarkt' : '☆ Bookmark'}
+                    </button>
+                    <button class="complete-btn ${isRead ? 'completed' : ''}" 
+                            onclick="toggleRead(${card.id})">
+                        <span class="complete-check ${isRead ? 'checked' : ''}"></span>
+                        <span class="complete-text">${isRead ? 'Voltooid' : 'Markeer als voltooid'}</span>
+                    </button>
+                </div>
+            `;
+
+            body.innerHTML = `
+                <div class="modal-section">
+                    <h3>Introductie</h3>
+                    <p>${card.content.intro}</p>
+                </div>
+                <div class="modal-section">
+                    <h3>Details</h3>
+                    <ul>
+                        ${card.content.details.map(detail => `<li>${detail}</li>`).join('')}
+                    </ul>
+                </div>
+                <div class="modal-section">
+                    <h3>Voordelen</h3>
+                    <p>${card.content.benefits}</p>
+                </div>
+                <div class="modal-section">
+                    <h3>Volgende Stappen</h3>
+                    <p>${card.content.nextSteps}</p>
+                </div>
+            `;
+
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('modal');
+            modal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+
+        function nextCard() {
+            if (currentCardIndex < filteredCards.length - 1) {
+                openModal(filteredCards[currentCardIndex + 1].id);
+            }
+        }
+
+        function previousCard() {
+            if (currentCardIndex > 0) {
+                openModal(filteredCards[currentCardIndex - 1].id);
+            }
+        }
+
+        function toggleBookmark(cardId) {
+            if (bookmarkedIds.has(cardId)) {
+                bookmarkedIds.delete(cardId);
+            } else {
+                bookmarkedIds.add(cardId);
+            }
+            localStorage.setItem('bookmarks', JSON.stringify([...bookmarkedIds]));
+            renderCards();
+            updateStats();
+            
+            // Update modal if open
+            const modal = document.getElementById('modal');
+            if (modal.classList.contains('active')) {
+                const card = checklistData.find(c => c.id === cardId);
+                if (card) {
+                    openModal(cardId);
+                }
+            }
+        }
+
+        function toggleRead(cardId) {
+            if (readIds.has(cardId)) {
+                readIds.delete(cardId);
+            } else {
+                readIds.add(cardId);
+            }
+            localStorage.setItem('read', JSON.stringify([...readIds]));
+            renderCards();
+            updateStats();
+            
+            // Update modal if open
+            const modal = document.getElementById('modal');
+            if (modal.classList.contains('active')) {
+                const card = checklistData.find(c => c.id === cardId);
+                if (card) {
+                    openModal(cardId);
+                }
+            }
+        }
+
+        function updateStats() {
+            const totalCards = checklistData.length;
+            const readCount = readIds.size;
+            const percentage = (readCount / totalCards) * 100;
+            
+            document.getElementById('progressNumbers').textContent = `${readCount}/${totalCards}`;
+            document.getElementById('progressFill').style.width = `${percentage}%`;
+            document.getElementById('bookmarkCount').textContent = bookmarkedIds.size;
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GenAI Implementatie Checklist - Kanban Board</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+
+        .header-subtitle {
+            color: #6b7280;
+            font-size: 16px;
+        }
+
+        .progress-info {
+            text-align: right;
+        }
+
+        .progress-info .number {
+            font-size: 36px;
+            font-weight: bold;
+            color: #4f46e5;
+        }
+
+        .progress-info .label {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 12px;
+            background: #e5e7eb;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+            transition: width 0.5s ease;
+            border-radius: 6px;
+        }
+
+        /* Filters */
+        .filters {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .filters-row {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .btn:hover {
+            background: #e5e7eb;
+        }
+
+        .btn.active {
+            background: #4f46e5;
+            color: white;
+        }
+
+        .search-input {
+            flex: 1;
+            min-width: 250px;
+            padding: 10px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #4f46e5;
+        }
+
+        select {
+            padding: 10px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            background: white;
+        }
+
+        /* Category Section */
+        .category-section {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .category-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f3f4f6;
+        }
+
+        .category-title {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .category-icon {
+            font-size: 40px;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            color: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .category-name {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1f2937;
+        }
+
+        .category-stats {
+            color: #6b7280;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .category-progress {
+            text-align: right;
+        }
+
+        .category-progress .percentage {
+            font-size: 32px;
+            font-weight: bold;
+            color: #1f2937;
+        }
+
+        .mini-progress-bar {
+            width: 120px;
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .mini-progress-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        /* Kanban Board */
+        .kanban-board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        .kanban-column {
+            background: #f9fafb;
+            border-radius: 10px;
+            padding: 15px;
+            min-height: 400px;
+        }
+
+        .column-header {
+            font-size: 16px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .column-count {
+            background: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #6b7280;
+        }
+
+        /* Check Card */
+        .check-card {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: all 0.2s;
+            border-left: 4px solid;
+        }
+
+        .check-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .card-header {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .card-icon {
+            font-size: 24px;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            flex-shrink: 0;
+            color: white;
+        }
+
+        .card-content {
+            flex: 1;
+        }
+
+        .card-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1f2937;
+            line-height: 1.4;
+            margin-bottom: 8px;
+        }
+
+        .card-badges {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        .badge-priority-hoog { background: #fee2e2; color: #991b1b; }
+        .badge-priority-medium { background: #fef3c7; color: #92400e; }
+        .badge-priority-laag { background: #dcfce7; color: #166534; }
+        .badge-phase { background: #dbeafe; color: #1e40af; }
+
+        .card-footer {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #f3f4f6;
+        }
+
+        /* Modal */
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .modal-backdrop.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 16px;
+            max-width: 800px;
+            width: 100%;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            padding: 30px;
+            color: white;
+            border-radius: 16px 16px 0 0;
+        }
+
+        .modal-header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 20px;
+        }
+
+        .modal-title-area {
+            display: flex;
+            gap: 20px;
+            flex: 1;
+        }
+
+        .modal-icon {
+            font-size: 48px;
+        }
+
+        .modal-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-top: 8px;
+        }
+
+        .modal-subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 4px;
+        }
+
+        .modal-close {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            font-size: 24px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .modal-close:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .modal-tags {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .modal-tag {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+        }
+
+        .modal-body {
+            padding: 30px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .modal-section {
+            margin-bottom: 24px;
+        }
+
+        .modal-section h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 12px;
+        }
+
+        .modal-section p {
+            color: #4b5563;
+            line-height: 1.7;
+        }
+
+        .modal-info-box {
+            background: #dbeafe;
+            border-left: 4px solid #3b82f6;
+            padding: 16px;
+            border-radius: 0 8px 8px 0;
+            margin-top: 20px;
+        }
+
+        .modal-info-box p {
+            color: #1e3a8a;
+            font-size: 14px;
+        }
+
+        .modal-footer {
+            padding: 20px 30px;
+            background: #f9fafb;
+            border-top: 1px solid #e5e7eb;
+            border-radius: 0 0 16px 16px;
+        }
+
+        .modal-footer-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .status-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .status-button {
+            padding: 10px 20px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
+        }
+
+        .status-button:hover {
+            border-color: #4f46e5;
+        }
+
+        .status-button.active {
+            background: #4f46e5;
+            color: white;
+            border-color: #4f46e5;
+        }
+
+        .btn-primary {
+            background: #4f46e5;
+            color: white;
+            padding: 10px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-primary:hover {
+            background: #4338ca;
+        }
+
+        /* Color classes */
+        .bg-green { background: #10b981; }
+        .bg-blue { background: #3b82f6; }
+        .bg-purple { background: #8b5cf6; }
+        .bg-orange { background: #f97316; }
+        .bg-yellow { background: #eab308; }
+
+        .border-green { border-color: #10b981; }
+        .border-blue { border-color: #3b82f6; }
+        .border-purple { border-color: #8b5cf6; }
+        .border-orange { border-color: #f97316; }
+        .border-yellow { border-color: #eab308; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .kanban-board {
+                grid-template-columns: 1fr;
+            }
+            
+            .header-top {
+                flex-direction: column;
+                gap: 20px;
+            }
+            
+            .filters-row {
+                flex-direction: column;
+            }
+            
+            .search-input {
+                width: 100%;
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-top">
+                <div>
+                    <h1>GenAI Implementatie Checklist</h1>
+                    <p class="header-subtitle">Jouw persoonlijke roadmap naar AI-transformatie</p>
+                </div>
+                <div class="progress-info">
+                    <div class="number" id="totalProgress">0/60</div>
+                    <div class="label">checks voltooid</div>
+                </div>
+            </div>
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filters">
+            <div class="filters-row">
+                <div class="filter-group">
+                    <button class="btn active" data-phase="all">Alle Fases</button>
+                    <button class="btn" data-phase="1">Fase 1: Exploratie</button>
+                    <button class="btn" data-phase="2">Fase 2: Implementatie</button>
+                    <button class="btn" data-phase="3">Fase 3: Transformatie</button>
+                </div>
+                <input type="text" class="search-input" id="searchInput" placeholder="🔍 Zoek in alle checks...">
+                <select id="priorityFilter">
+                    <option value="all">Alle Prioriteiten</option>
+                    <option value="Hoog">Hoog</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Laag">Laag</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Categories -->
+        <div id="categoriesContainer"></div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal-backdrop" id="modalBackdrop">
+        <div class="modal">
+            <div class="modal-header" id="modalHeader">
+                <div class="modal-header-content">
+                    <div class="modal-title-area">
+                        <div class="modal-icon" id="modalIcon"></div>
+                        <div>
+                            <div class="modal-subtitle" id="modalCategory"></div>
+                            <div class="modal-title" id="modalTitle"></div>
+                        </div>
+                    </div>
+                    <button class="modal-close" onclick="closeModal()">×</button>
+                </div>
+                <div class="modal-tags" id="modalTags"></div>
+            </div>
+            <div class="modal-body">
+                <div class="modal-section">
+                    <h3>Beschrijving</h3>
+                    <p id="modalContent"></p>
+                </div>
+                <div class="modal-info-box">
+                    <p><strong>💡 Tip:</strong> Deze check bevat <span id="modalPages"></span> A4-pagina's aan gedetailleerde informatie. 
+                    In een volledig systeem zou hier de volledige content beschikbaar zijn.</p>
+                </div>
+                <div class="modal-section">
+                    <h3>Gerelateerde checks</h3>
+                    <p>Bekijk ook andere checks in dezelfde fase of categorie voor een compleet beeld.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div class="modal-footer-content">
+                    <div>
+                        <div style="font-size: 12px; font-weight: 600; color: #6b7280; margin-bottom: 8px;">Status wijzigen:</div>
+                        <div class="status-buttons">
+                            <button class="status-button" data-status="todo" onclick="changeStatus('todo')">📋 To Do</button>
+                            <button class="status-button" data-status="inprogress" onclick="changeStatus('inprogress')">⏳ In Progress</button>
+                            <button class="status-button" data-status="done" onclick="changeStatus('done')">✅ Done</button>
+                        </div>
+                    </div>
+                    <button class="btn-primary" onclick="closeModal()">Sluiten</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data - Sample data from your checklist
+        const categories = {
+            technical: {
+                name: "Technische Implementatie",
+                icon: "🔧",
+                colorClass: "green",
+                checks: [
+                    { id: "t1-1", phase: 1, title: "Focus op off-the-shelf toepassingen", priority: "Hoog", time: "5 min", pages: 2, content: "Verken bestaande AI-tools en platforms die direct toepasbaar zijn zonder custom development. Dit versnelt implementatie en vermindert risico's." },
+                    { id: "t1-2", phase: 1, title: "Breng datamatuurheid in kaart", priority: "Hoog", time: "7 min", pages: 2, content: "Beoordeel de kwaliteit, beschikbaarheid en governance van je huidige data-infrastructuur." },
+                    { id: "t1-3", phase: 1, title: "Identificeer en documenteer AI-systemen", priority: "Medium", time: "6 min", pages: 1, content: "Creëer een inventaris van alle AI-systemen die in gebruik zijn of overwogen worden." },
+                    { id: "t2-1", phase: 2, title: "Gebruik AI op maat", priority: "Hoog", time: "8 min", pages: 2, content: "Ontwikkel of customizeer AI-oplossingen specifiek voor jouw organisatie behoeften." },
+                    { id: "t2-2", phase: 2, title: "Zet in op robuuste systemen", priority: "Hoog", time: "6 min", pages: 2, content: "Bouw systemen die betrouwbaar, schaalbaar en onderhoudbaar zijn." },
+                    { id: "t2-3", phase: 2, title: "Start een use-case", priority: "Medium", time: "5 min", pages: 1, content: "Begin met een duidelijk afgebakend pilotproject om ervaring op te doen." },
+                    { id: "t3-1", phase: 3, title: "Stem IT- en data-architectuur af op AI", priority: "Hoog", time: "9 min", pages: 2, content: "Pas je technische infrastructuur aan om AI op enterprise-niveau te ondersteunen." },
+                    { id: "t3-2", phase: 3, title: "Volg waarderealisatie van use-cases op", priority: "Medium", time: "7 min", pages: 2, content: "Meet en optimaliseer de business impact van AI-implementaties." },
+                    { id: "t3-3", phase: 3, title: "Monitor adoptief", priority: "Medium", time: "5 min", pages: 1, content: "Implementeer continue monitoring en aanpassing van AI-systemen." }
+                ]
+            },
+            legal: {
+                name: "Juridische & Ethische Aspecten",
+                icon: "🛡️",
+                colorClass: "blue",
+                checks: [
+                    { id: "l1-1", phase: 1, title: "Bepaal de impact van de EU AI Act", priority: "Hoog", time: "8 min", pages: 2, content: "Analyseer welke AI-toepassingen onder welke risicocategorie vallen volgens de EU AI Act." },
+                    { id: "l1-2", phase: 1, title: "Neem richtlijnen aan", priority: "Hoog", time: "6 min", pages: 2, content: "Stel interne AI-governance richtlijnen op die aligned zijn met wetgeving." },
+                    { id: "l1-3", phase: 1, title: "Deel AI systemen op in risicoklassen", priority: "Medium", time: "7 min", pages: 2, content: "Classificeer je AI-systemen volgens het EU AI Act risico-framework." },
+                    { id: "l1-4", phase: 1, title: "Communiceer intern transparant over gebruik", priority: "Medium", time: "5 min", pages: 1, content: "Zorg voor heldere communicatie naar medewerkers over AI-gebruik." },
+                    { id: "l2-1", phase: 2, title: "Bepaal de risicostrategie van de organisatie", priority: "Hoog", time: "8 min", pages: 2, content: "Ontwikkel een comprehensive risk management strategie voor AI." },
+                    { id: "l2-2", phase: 2, title: "Stel datagovernanceregels op", priority: "Hoog", time: "7 min", pages: 2, content: "Implementeer policies voor data quality, privacy en security." },
+                    { id: "l2-3", phase: 2, title: "Stel een communicatie- en veranderplan op", priority: "Medium", time: "6 min", pages: 1, content: "Plan hoe je AI-transformatie communiceert naar stakeholders." },
+                    { id: "l2-4", phase: 2, title: "Ontwikkel een ethisch kader", priority: "Hoog", time: "8 min", pages: 2, content: "Creëer ethische richtlijnen voor verantwoorde AI-ontwikkeling." },
+                    { id: "l3-1", phase: 3, title: "Zet in op betrouwbare fallback systemen", priority: "Hoog", time: "7 min", pages: 2, content: "Implementeer backup-systemen voor kritische AI-functies." },
+                    { id: "l3-2", phase: 3, title: "Implementeer een risico- en controleraamwerk", priority: "Hoog", time: "8 min", pages: 2, content: "Bouw een systeem voor continue risk assessment en control." }
+                ]
+            },
+            economic: {
+                name: "Economische Impact & Strategie",
+                icon: "📊",
+                colorClass: "purple",
+                checks: [
+                    { id: "e1-1", phase: 1, title: "Analyseer het huidige organisatiemodel", priority: "Hoog", time: "7 min", pages: 2, content: "Breng in kaart hoe je organisatie nu werkt en waar AI impact kan hebben." },
+                    { id: "e1-2", phase: 1, title: "Laat ruimte voor experimenteren", priority: "Medium", time: "5 min", pages: 1, content: "Creëer ruimte en budget voor AI-experimenten zonder directe ROI-druk." },
+                    { id: "e1-3", phase: 1, title: "Ontwerp een AI-organisatiemodel", priority: "Hoog", time: "8 min", pages: 2, content: "Bepaal hoe AI-competenties georganiseerd worden in je bedrijf." },
+                    { id: "e2-1", phase: 2, title: "Valideer de business case", priority: "Hoog", time: "6 min", pages: 2, content: "Test en verfijn je aannames uit de initiële business case." },
+                    { id: "e2-2", phase: 2, title: "Prioriteer use-cases", priority: "Medium", time: "6 min", pages: 1, content: "Rank projecten op basis van impact, haalbaarheid en strategisch belang." },
+                    { id: "e2-3", phase: 2, title: "Voer governance en robuuste KPIs in", priority: "Hoog", time: "7 min", pages: 2, content: "Definieer meetbare KPIs voor AI-projecten en stel governance op." },
+                    { id: "e3-1", phase: 3, title: "Bied verschillende ondersteuningsniveaus aan", priority: "Medium", time: "6 min", pages: 1, content: "Creëer verschillende service levels voor AI-ondersteuning." },
+                    { id: "e3-2", phase: 3, title: "Schaal productiviteitswinst op", priority: "Hoog", time: "7 min", pages: 2, content: "Vertaal individuele efficiëntiewinst naar organisatieniveau." },
+                    { id: "e3-3", phase: 3, title: "Expandeer via dienstverlening", priority: "Hoog", time: "7 min", pages: 2, content: "Ontwikkel nieuwe business models rond AI-capabilities." }
+                ]
+            },
+            creative: {
+                name: "Creatieve Sector & Media",
+                icon: "🎬",
+                colorClass: "orange",
+                checks: [
+                    { id: "c1-1", phase: 1, title: "Waak over kwaliteit", priority: "Hoog", time: "6 min", pages: 1, content: "Stel kwaliteitscriteria op voor AI-gegenereerde content." },
+                    { id: "c1-2", phase: 1, title: "Waak over creatieve authenticiteit", priority: "Hoog", time: "6 min", pages: 2, content: "Behoud menselijke creatieve visie en originaliteit." },
+                    { id: "c1-3", phase: 1, title: "Stem af met de eindgebruiker", priority: "Medium", time: "5 min", pages: 1, content: "Betrek stakeholders vroeg in creatieve AI-processen." },
+                    { id: "c2-1", phase: 2, title: "Voorzie geleidelijke introductie", priority: "Medium", time: "6 min", pages: 2, content: "Implementeer AI gefaseerd om adoptie te vergemakkelijken." },
+                    { id: "c2-2", phase: 2, title: "Bouw vertrouwen op", priority: "Hoog", time: "7 min", pages: 2, content: "Creëer vertrouwen in AI bij creatieve professionals." },
+                    { id: "c3-1", phase: 3, title: "Creëer nieuwe content", priority: "Medium", time: "6 min", pages: 1, content: "Ontdek nieuwe creatieve mogelijkheden met AI." },
+                    { id: "c3-2", phase: 3, title: "Plaats menselijke expertise centraal", priority: "Hoog", time: "6 min", pages: 2, content: "Positioneer menselijke expertise als kern van creatief werk." }
+                ]
+            },
+            education: {
+                name: "Onderwijs & AI-Geletterdheid",
+                icon: "🎓",
+                colorClass: "yellow",
+                checks: [
+                    { id: "ed1-1", phase: 1, title: "Organiseer inspiratiesessies", priority: "Medium", time: "5 min", pages: 1, content: "Host sessies om awareness en enthousiasme voor AI te creëren." },
+                    { id: "ed1-2", phase: 1, title: "Ondersteun via kennisdeling", priority: "Medium", time: "6 min", pages: 1, content: "Faciliteer kennisdeling tussen early adopters en anderen." },
+                    { id: "ed1-3", phase: 1, title: "Creëer bewustzijn", priority: "Hoog", time: "6 min", pages: 2, content: "Bouw organisatiebrede bewustzijn over AI-mogelijkheden en -risico's." },
+                    { id: "ed2-1", phase: 2, title: "Investeer in kennisopbouw", priority: "Hoog", time: "7 min", pages: 2, content: "Bied structurele training en just-in-time learning." },
+                    { id: "ed2-2", phase: 2, title: "Herdefinieer processen en rollen", priority: "Hoog", time: "8 min", pages: 2, content: "Pas job descriptions en workflows aan voor AI-tijdperk." },
+                    { id: "ed2-3", phase: 2, title: "Train teams in beoordelingsvermogen", priority: "Hoog", time: "7 min", pages: 2, content: "Leer medewerkers AI-output kritisch te evalueren." },
+                    { id: "ed3-1", phase: 3, title: "Behoud menselijke expertise", priority: "Hoog", time: "7 min", pages: 2, content: "Investeer in menselijke vaardigheden die AI complementeren." },
+                    { id: "ed3-2", phase: 3, title: "Volg impact en veranderingen op", priority: "Medium", time: "6 min", pages: 1, content: "Monitor effect van AI op werknemers en productiviteit." }
+                ]
+            }
+        };
+
+        // State
+        let checkStatuses = {};
+        let currentPhase = 'all';
+        let searchQuery = '';
+        let priorityFilter = 'all';
+        let currentCheckId = null;
+
+        // Initialize
+        function init() {
+            // Load statuses from localStorage
+            const saved = localStorage.getItem('checkStatuses');
+            if (saved) {
+                checkStatuses = JSON.parse(saved);
+            } else {
+                // Initialize all to 'todo'
+                Object.values(categories).forEach(cat => {
+                    cat.checks.forEach(check => {
+                        checkStatuses[check.id] = 'todo';
+                    });
+                });
+            }
+
+            // Setup event listeners
+            document.querySelectorAll('[data-phase]').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('[data-phase]').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    currentPhase = this.dataset.phase;
+                    render();
+                });
+            });
+
+            document.getElementById('searchInput').addEventListener('input', function(e) {
+                searchQuery = e.target.value.toLowerCase();
+                render();
+            });
+
+            document.getElementById('priorityFilter').addEventListener('change', function(e) {
+                priorityFilter = e.target.value;
+                render();
+            });
+
+            document.getElementById('modalBackdrop').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeModal();
+                }
+            });
+
+            render();
+        }
+
+        // Render all categories
+        function render() {
+            const container = document.getElementById('categoriesContainer');
+            container.innerHTML = '';
+
+            Object.entries(categories).forEach(([key, category]) => {
+                const filteredChecks = filterChecks(category.checks);
+                if (filteredChecks.length === 0) return;
+
+                const section = createCategorySection(key, category, filteredChecks);
+                container.appendChild(section);
+            });
+
+            updateProgress();
+        }
+
+        // Filter checks based on current filters
+        function filterChecks(checks) {
+            return checks.filter(check => {
+                const matchesPhase = currentPhase === 'all' || check.phase === parseInt(currentPhase);
+                const matchesSearch = searchQuery === '' || 
+                    check.title.toLowerCase().includes(searchQuery) || 
+                    check.content.toLowerCase().includes(searchQuery);
+                const matchesPriority = priorityFilter === 'all' || check.priority === priorityFilter;
+                
+                return matchesPhase && matchesSearch && matchesPriority;
+            });
+        }
+
+        // Create category section
+        function createCategorySection(key, category, checks) {
+            const section = document.createElement('div');
+            section.className = 'category-section';
+
+            const progress = calculateProgress(checks);
+
+            section.innerHTML = `
+                <div class="category-header">
+                    <div class="category-title">
+                        <div class="category-icon bg-${category.colorClass}">
+                            ${category.icon}
+                        </div>
+                        <div>
+                            <div class="category-name">${category.name}</div>
+                            <div class="category-stats">${progress.completed} van ${progress.total} checks voltooid</div>
+                        </div>
+                    </div>
+                    <div class="category-progress">
+                        <div class="percentage">${progress.percentage}%</div>
+                        <div class="mini-progress-bar">
+                            <div class="mini-progress-fill bg-${category.colorClass}" style="width: ${progress.percentage}%"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="kanban-board">
+                    <div class="kanban-column">
+                        <div class="column-header">
+                            <span>📋 To Do</span>
+                            <span class="column-count" id="count-${key}-todo">0</span>
+                        </div>
+                        <div id="column-${key}-todo"></div>
+                    </div>
+                    <div class="kanban-column">
+                        <div class="column-header">
+                            <span>⏳ In Progress</span>
+                            <span class="column-count" id="count-${key}-inprogress">0</span>
+                        </div>
+                        <div id="column-${key}-inprogress"></div>
+                    </div>
+                    <div class="kanban-column">
+                        <div class="column-header">
+                            <span>✅ Done</span>
+                            <span class="column-count" id="count-${key}-done">0</span>
+                        </div>
+                        <div id="column-${key}-done"></div>
+                    </div>
+                </div>
+            `;
+
+            // Add cards to columns
+            const columns = {
+                todo: section.querySelector(`#column-${key}-todo`),
+                inprogress: section.querySelector(`#column-${key}-inprogress`),
+                done: section.querySelector(`#column-${key}-done`)
+            };
+
+            const counts = { todo: 0, inprogress: 0, done: 0 };
+
+            checks.forEach(check => {
+                const status = checkStatuses[check.id] || 'todo';
+                const card = createCheckCard(check, category);
+                columns[status].appendChild(card);
+                counts[status]++;
+            });
+
+            // Update counts
+            Object.entries(counts).forEach(([status, count]) => {
+                section.querySelector(`#count-${key}-${status}`).textContent = count;
+            });
+
+            return section;
+        }
+
+        // Create check card
+        function createCheckCard(check, category) {
+            const card = document.createElement('div');
+            card.className = `check-card border-${category.colorClass}`;
+            card.onclick = () => openModal(check, category);
+
+            const priorityClass = `badge-priority-${check.priority.toLowerCase()}`;
+
+            card.innerHTML = `
+                <div class="card-header">
+                    <div class="card-icon bg-${category.colorClass}">
+                        ${category.icon}
+                    </div>
+                    <div class="card-content">
+                        <div class="card-title">${check.title}</div>
+                        <div class="card-badges">
+                            <span class="badge ${priorityClass}">${check.priority}</span>
+                            <span class="badge badge-phase">Fase ${check.phase}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <span>⏱️ ${check.time}</span>
+                    <span>📄 ${check.pages} pagina's</span>
+                </div>
+            `;
+
+            return card;
+        }
+
+        // Calculate progress
+        function calculateProgress(checks) {
+            const completed = checks.filter(c => checkStatuses[c.id] === 'done').length;
+            const total = checks.length;
+            const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+            return { completed, total, percentage };
+        }
+
+        // Update overall progress
+        function updateProgress() {
+            const allChecks = Object.values(categories).flatMap(cat => cat.checks);
+            const progress = calculateProgress(allChecks);
+            
+            document.getElementById('totalProgress').textContent = `${progress.completed}/${progress.total}`;
+            document.getElementById('progressBar').style.width = `${progress.percentage}%`;
+        }
+
+        // Open modal
+        function openModal(check, category) {
+            currentCheckId = check.id;
+            const modal = document.getElementById('modalBackdrop');
+            
+            document.getElementById('modalHeader').className = `modal-header bg-${category.colorClass}`;
+            document.getElementById('modalIcon').textContent = category.icon;
+            document.getElementById('modalCategory').textContent = category.name;
+            document.getElementById('modalTitle').textContent = check.title;
+            document.getElementById('modalContent').textContent = check.content;
+            document.getElementById('modalPages').textContent = check.pages;
+
+            const phaseNames = {
+                1: "Exploratie & Experimentatie",
+                2: "Implementatie & Integratie",
+                3: "Transformatie & Expansie"
+            };
+
+            document.getElementById('modalTags').innerHTML = `
+                <span class="modal-tag">Fase ${check.phase}: ${phaseNames[check.phase]}</span>
+                <span class="modal-tag">Prioriteit: ${check.priority}</span>
+                <span class="modal-tag">⏱️ ${check.time}</span>
+                <span class="modal-tag">📄 ${check.pages} pagina's</span>
+            `;
+
+            // Update status buttons
+            const currentStatus = checkStatuses[check.id] || 'todo';
+            document.querySelectorAll('.status-button').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.status === currentStatus);
+            });
+
+            modal.classList.add('active');
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('modalBackdrop').classList.remove('active');
+            currentCheckId = null;
+        }
+
+        // Change status
+        function changeStatus(newStatus) {
+            if (currentCheckId) {
+                checkStatuses[currentCheckId] = newStatus;
+                localStorage.setItem('checkStatuses', JSON.stringify(checkStatuses));
+                render();
+                closeModal();
+            }
+        }
+
+        // Start app
+        init();
+    </script>
+</body>
+</html>

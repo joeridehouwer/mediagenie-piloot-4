@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GenAI Implementatie Checklist - Interactive Journey</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow-x: hidden;
+            background: #f8f9fa;
+        }
+
+        /* Progress Sidebar */
+        .progress-sidebar {
+            position: fixed;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 1000;
+            background: white;
+            padding: 20px 15px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .progress-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ddd;
+            margin: 15px 0;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .progress-dot.active {
+            background: #ff6b35;
+            transform: scale(1.5);
+        }
+
+        .progress-dot:hover {
+            transform: scale(1.3);
+        }
+
+        .progress-label {
+            position: absolute;
+            left: 30px;
+            top: -5px;
+            white-space: nowrap;
+            font-size: 12px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .progress-dot:hover .progress-label {
+            opacity: 1;
+        }
+
+        /* Quick Navigation */
+        .quick-nav {
+            position: fixed;
+            right: 30px;
+            top: 30px;
+            z-index: 1000;
+            display: flex;
+            gap: 10px;
+        }
+
+        .quick-nav button {
+            padding: 8px 16px;
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .quick-nav button:hover {
+            background: #ff6b35;
+            color: white;
+            border-color: #ff6b35;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 80px 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 20px;
+            opacity: 0.9;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        /* Phase Section */
+        .phase-section {
+            min-height: 100vh;
+            padding: 100px 20px;
+            position: relative;
+            transition: background 0.5s;
+        }
+
+        .phase-1 { background: linear-gradient(180deg, #e3f2fd 0%, #bbdefb 100%); }
+        .phase-2 { background: linear-gradient(180deg, #fff3e0 0%, #ffe0b2 100%); }
+        .phase-3 { background: linear-gradient(180deg, #f3e5f5 0%, #e1bee7 100%); }
+
+        .phase-header {
+            text-align: center;
+            margin-bottom: 80px;
+            opacity: 0;
+            transform: translateY(50px);
+            transition: all 0.8s;
+        }
+
+        .phase-header.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .phase-number {
+            font-size: 18px;
+            font-weight: 600;
+            color: #666;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .phase-title {
+            font-size: 42px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .phase-subtitle {
+            font-size: 24px;
+            color: #555;
+            font-weight: 400;
+        }
+
+        /* Category Container */
+        .categories-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .category-block {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 40px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.6s;
+        }
+
+        .category-block.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .category-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 30px;
+            gap: 20px;
+        }
+
+        .category-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            flex-shrink: 0;
+        }
+
+        .icon-tech { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .icon-legal { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .icon-business { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        .icon-creative { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+        .icon-education { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+
+        .category-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        /* Checks Grid */
+        .checks-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .check-item {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+            position: relative;
+        }
+
+        .check-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            border-color: #ff6b35;
+        }
+
+        .check-item.completed {
+            background: #e8f5e9;
+            border-color: #4caf50;
+        }
+
+        .check-checkbox {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 24px;
+            height: 24px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .check-item.completed .check-checkbox {
+            background: #4caf50;
+            border-color: #4caf50;
+        }
+
+        .check-checkbox::after {
+            content: '✓';
+            color: white;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .check-item.completed .check-checkbox::after {
+            opacity: 1;
+        }
+
+        .check-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            padding-right: 35px;
+            line-height: 1.4;
+        }
+
+        .check-preview {
+            font-size: 13px;
+            color: #666;
+            line-height: 1.5;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 50px;
+            position: relative;
+            animation: slideUp 0.4s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #f5f5f5;
+            border: none;
+            cursor: pointer;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .modal-close:hover {
+            background: #ff6b35;
+            color: white;
+        }
+
+        .modal-header {
+            margin-bottom: 30px;
+        }
+
+        .modal-category {
+            font-size: 14px;
+            color: #ff6b35;
+            font-weight: 600;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .modal-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 20px;
+            line-height: 1.3;
+        }
+
+        .modal-body {
+            font-size: 16px;
+            line-height: 1.8;
+            color: #555;
+        }
+
+        .modal-body h3 {
+            font-size: 22px;
+            margin: 30px 0 15px;
+            color: #333;
+        }
+
+        .modal-body ul {
+            margin: 15px 0;
+            padding-left: 25px;
+        }
+
+        .modal-body li {
+            margin: 10px 0;
+        }
+
+        /* Progress Stats */
+        .progress-stats {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: white;
+            padding: 20px 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+
+        .progress-stats-title {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .progress-stats-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #ff6b35;
+        }
+
+        /* Scroll to top */
+        .scroll-top {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            width: 50px;
+            height: 50px;
+            background: #ff6b35;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+
+        .scroll-top.visible {
+            opacity: 1;
+        }
+
+        .scroll-top:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(255,107,53,0.4);
+        }
+
+        @media (max-width: 768px) {
+            .progress-sidebar {
+                display: none;
+            }
+
+            .quick-nav {
+                right: 10px;
+                top: 10px;
+                flex-wrap: wrap;
+            }
+
+            .quick-nav button {
+                font-size: 11px;
+                padding: 6px 12px;
+            }
+
+            .header h1 {
+                font-size: 32px;
+            }
+
+            .phase-title {
+                font-size: 28px;
+            }
+
+            .checks-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .modal-content {
+                padding: 30px 20px;
+            }
+
+            .progress-stats {
+                bottom: 10px;
+                right: 10px;
+                padding: 15px 20px;
+            }
+
+            .scroll-top {
+                bottom: 80px;
+                left: 10px;
+                width: 45px;
+                height: 45px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Progress Sidebar -->
+    <div class="progress-sidebar">
+        <div class="progress-dot active" data-phase="0">
+            <span class="progress-label">Start</span>
+        </div>
+        <div class="progress-dot" data-phase="1">
+            <span class="progress-label">Fase 1</span>
+        </div>
+        <div class="progress-dot" data-phase="2">
+            <span class="progress-label">Fase 2</span>
+        </div>
+        <div class="progress-dot" data-phase="3">
+            <span class="progress-label">Fase 3</span>
+        </div>
+    </div>
+
+    <!-- Quick Navigation -->
+    <div class="quick-nav">
+        <button onclick="scrollToPhase(1)">Fase 1</button>
+        <button onclick="scrollToPhase(2)">Fase 2</button>
+        <button onclick="scrollToPhase(3)">Fase 3</button>
+    </div>
+
+    <!-- Progress Stats -->
+    <div class="progress-stats">
+        <div class="progress-stats-title">Voortgang</div>
+        <div class="progress-stats-value"><span id="completed-count">0</span>/<span id="total-count">45</span></div>
+    </div>
+
+    <!-- Scroll to Top -->
+    <div class="scroll-top" onclick="scrollToTop()">↑</div>
+
+    <!-- Header -->
+    <div class="header">
+        <h1>GenAI Implementatie Journey</h1>
+        <p>Een interactieve gids door exploratie, implementatie en transformatie. Scroll door de fases, ontdek de checks en bouw je eigen pad.</p>
+    </div>
+
+    <!-- Phase 1: Exploratie & Experimentatie -->
+    <div class="phase-section phase-1" id="phase-1">
+        <div class="phase-header">
+            <div class="phase-number">Fase 1</div>
+            <div class="phase-title">Exploratie & Experimentatie</div>
+            <div class="phase-subtitle">Ontdek de mogelijkheden en leg de basis</div>
+        </div>
+
+        <div class="categories-container">
+            <!-- Technical Implementation -->
+            <div class="category-block">
+                <div class="category-header">
+                    <div class="category-icon icon-tech">🔧</div>
+                    <div class="category-title">Technische Implementatie & Toepassingen</div>
+                </div>
+                <div class="checks-grid">
+                    <div class="check-item" data-check="tech-1-1">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Focus op off-the-shelf toepassingen</div>
+                        <div class="check-preview">Begin met gebruiksvriendelijke, kant-en-klare AI-tools die snel resultaat opleveren...</div>
+                    </div>
+                    <div class="check-item" data-check="tech-1-2">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Breng datamatuuriteit in kaart</div>
+                        <div class="check-preview">Analyseer de kwaliteit, beschikbaarheid en structuur van je huidige data...</div>
+                    </div>
+                    <div class="check-item" data-check="tech-1-3">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Identificeer en documenteer AI-systemen</div>
+                        <div class="check-preview">Maak een overzicht van alle AI-tools en -systemen die al gebruikt worden...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Legal & Ethics -->
+            <div class="category-block">
+                <div class="category-header">
+                    <div class="category-icon icon-legal">⚖️</div>
+                    <div class="category-title">Juridische & Ethische Aspecten</div>
+                </div>
+                <div class="checks-grid">
+                    <div class="check-item" data-check="legal-1-1">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Bepaal impact van EU AI Act</div>
+                        <div class="check-preview">Onderzoek welke vereisten uit de EU AI Act van toepassing zijn op jouw organisatie...</div>
+                    </div>
+                    <div class="check-item" data-check="legal-1-2">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Neem richtlijnen aan</div>
+                        <div class="check-preview">Stel heldere interne richtlijnen op voor verantwoord AI-gebruik...</div>
+                    </div>
+                    <div class="check-item" data-check="legal-1-3">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Deel AI-systemen op in risicoclassificatie</div>
+                        <div class="check-preview">Categoriseer AI-toepassingen volgens hun risiconiveau conform wetgeving...</div>
+                    </div>
+                    <div class="check-item" data-check="legal-1-4">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Communiceer intern transparant over gebruik</div>
+                        <div class="check-preview">Zorg voor open communicatie binnen teams over hoe en waar AI gebruikt wordt...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Economic Impact -->
+            <div class="category-block">
+                <div class="category-header">
+                    <div class="category-icon icon-business">💼</div>
+                    <div class="category-title">Economische Impact & Bedrijfsstrategieën</div>
+                </div>
+                <div class="checks-grid">
+                    <div class="check-item" data-check="business-1-1">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Analyseer het huidige organisatiemodel</div>
+                        <div class="check-preview">Breng in kaart hoe je organisatie nu werkt en waar AI kan aansluiten...</div>
+                    </div>
+                    <div class="check-item" data-check="business-1-2">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Laat ruimte voor experimenteren</div>
+                        <div class="check-preview">Creëer een veilige omgeving waar teams kunnen leren en experimenteren met AI...</div>
+                    </div>
+                    <div class="check-item" data-check="business-1-3">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Ontwerp een AI-organisatiemodel en flexibele AI-strategie</div>
+                        <div class="check-preview">Ontwikkel een toekomstgericht organisatiemodel dat AI-gebruik faciliteert...</div>
+                    </div>
+                    <div class="check-item" data-check="business-1-4">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Identificeer enkele use-cases</div>
+                        <div class="check-preview">Selecteer concrete, haalbare pilots om mee te starten...</div>
+                    </div>
+                    <div class="check-item" data-check="business-1-5">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Start een concrete business case</div>
+                        <div class="check-preview">Bouw een solide business case voor je eerste AI-project met meetbare doelen...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Creative Sector -->
+            <div class="category-block">
+                <div class="category-header">
+                    <div class="category-icon icon-creative">🎨</div>
+                    <div class="category-title">Creatieve Sector & Media</div>
+                </div>
+                <div class="checks-grid">
+                    <div class="check-item" data-check="creative-1-1">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Waak over kwaliteit</div>
+                        <div class="check-preview">Behoud hoge kwaliteitsnormen bij AI-gegenereerde content...</div>
+                    </div>
+                    <div class="check-item" data-check="creative-1-2">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Waak over creatieve authenticiteit</div>
+                        <div class="check-preview">Zorg dat AI creativiteit ondersteunt maar niet vervangt...</div>
+                    </div>
+                    <div class="check-item" data-check="creative-1-3">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Stem tijdig af met eindgebruiker</div>
+                        <div class="check-preview">Betrek eindgebruikers vroeg in het proces voor betere resultaten...</div>
+                    </div>
+                    <div class="check-item" data-check="creative-1-4">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Werk aan co-creatie mens-machine</div>
+                        <div class="check-preview">Ontwikkel samenwerkingsmodellen tussen mensen en AI...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Education -->
+            <div class="category-block">
+                <div class="category-header">
+                    <div class="category-icon icon-education">🎓</div>
+                    <div class="category-title">Onderwijs & AI-geletterdheid</div>
+                </div>
+                <div class="checks-grid">
+                    <div class="check-item" data-check="education-1-1">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Organiseer inspiratiesessies</div>
+                        <div class="check-preview">Organiseer workshops om teams enthousiast en geïnformeerd te maken...</div>
+                    </div>
+                    <div class="check-item" data-check="education-1-2">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Ondersteun via kennisdeling</div>
+                        <div class="check-preview">Creëer platforms voor het delen van kennis en ervaringen...</div>
+                    </div>
+                    <div class="check-item" data-check="education-1-3">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Creëer bewustzijn</div>
+                        <div class="check-preview">Bouw awareness over kansen, risico's en best practices...</div>
+                    </div>
+                    <div class="check-item" data-check="education-1-4">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Investeer in basistraining</div>
+                        <div class="check-preview">Bied fundamentele AI-training aan alle medewerkers...</div>
+                    </div>
+                    <div class="check-item" data-check="education-1-5">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Onboard een testgroep</div>
+                        <div class="check-preview">Start met een pilotgroep die als ambassadeurs kan fungeren...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Phase 2: Implementatie & Integratie -->
+    <div class="phase-section phase-2" id="phase-2">
+        <div class="phase-header">
+            <div class="phase-number">Fase 2</div>
+            <div class="phase-title">Implementatie & Integratie</div>
+            <div class="phase-subtitle">Schaal op en integreer in dagelijkse processen</div>
+        </div>
+
+        <div class="categories-container">
+            <!-- Technical Implementation -->
+            <div class="category-block">
+                <div class="category-header">
+                    <div class="category-icon icon-tech">🔧</div>
+                    <div class="category-title">Technische Implementatie & Toepassingen</div>
+                </div>
+                <div class="checks-grid">
+                    <div class="check-item" data-check="tech-2-1">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Gebruik AI op maat</div>
+                        <div class="check-preview">Ontwikkel of pas AI-oplossingen aan die perfect aansluiten bij jouw behoeften...</div>
+                    </div>
+                    <div class="check-item" data-check="tech-2-2">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Zet in op robuuste systemen</div>
+                        <div class="check-preview">Bouw betrouwbare, schaalbare AI-infrastructuur...</div>
+                    </div>
+                    <div class="check-item" data-check="tech-2-3">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Start een use-case</div>
+                        <div class="check-preview">Lanceer je eerste volledig geïmplementeerde AI-toepassing...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Legal & Ethics -->
+            <div class="category-block">
+                <div class="category-header">
+                    <div class="category-icon icon-legal">⚖️</div>
+                    <div class="category-title">Juridische & Ethische Aspecten</div>
+                </div>
+                <div class="checks-grid">
+                    <div class="check-item" data-check="legal-2-1">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Bepaal risicostrategie van organisatie</div>
+                        <div class="check-preview">Ontwikkel een systematische aanpak voor AI-risicomanagement...</div>
+                    </div>
+                    <div class="check-item" data-check="legal-2-2">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Stel datatoegangmaatregelen</div>
+                        <div class="check-preview">Implementeer strikte toegangscontroles voor gevoelige data...</div>
+                    </div>
+                    <div class="check-item" data-check="legal-2-3">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Stel communicatie- en veranderplan op</div>
+                        <div class="check-preview">Creëer een strategie voor transparante communicatie over AI-gebruik...</div>
+                    </div>
+                    <div class="check-item" data-check="legal-2-4">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Ontwikkel een ethisch kader</div>
+                        <div class="check-preview">Formuleer ethische principes die alle AI-projecten moeten volgen...</div>
+                    </div>
+                    <div class="check-item" data-check="legal-2-5">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Communiceer extern transparant over gebruik</div>
+                        <div class="check-preview">Informeer klanten en partners over je AI-gebruik...</div>
+                    </div>
+                    <div class="check-item" data-check="legal-2-6">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Monitor juridische ontwikkelingen</div>
+                        <div class="check-preview">Blijf op de hoogte van veranderende wetgeving en compliance-eisen...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Economic Impact -->
+            <div class="category-block">
+                <div class="category-header">
+                    <div class="category-icon icon-business">💼</div>
+                    <div class="category-title">Economische Impact & Bedrijfsstrategieën</div>
+                </div>
+                <div class="checks-grid">
+                    <div class="check-item" data-check="business-2-1">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Valideer de business case</div>
+                        <div class="check-preview">Meet en evalueer de daadwerkelijke impact van je AI-investeringen...</div>
+                    </div>
+                    <div class="check-item" data-check="business-2-2">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Prioritiseer use-cases</div>
+                        <div class="check-preview">Kies strategisch welke AI-toepassingen het belangrijkst zijn...</div>
+                    </div>
+                    <div class="check-item" data-check="business-2-3">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Piloteer use-cases</div>
+                        <div class="check-preview">Test nieuwe toepassingen in gecontroleerde omgevingen...</div>
+                    </div>
+                    <div class="check-item" data-check="business-2-4">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Identificeer potentiële winsten en robuuste KPI's</div>
+                        <div class="check-preview">Definieer meetbare indicatoren voor AI-succes...</div>
+                    </div>
+                    <div class="check-item" data-check="business-2-5">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Valideer impact (top-down en bottom-up)</div>
+                        <div class="check-preview">Analyseer resultaten vanuit verschillende perspectieven...</div>
+                    </div>
+                    <div class="check-item" data-check="business-2-6">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Ontwerp een helder AI-beleid</div>
+                        <div class="check-preview">Formuleer duidelijk beleid voor organisatiebreed AI-gebruik...</div>
+                    </div>
+                    <div class="check-item" data-check="business-2-7">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Evalueer continu de doelstellingen</div>
+                        <div class="check-preview">Blijf monitoren of AI-projecten de gestelde doelen behalen...</div>
+                    </div>
+                    <div class="check-item" data-check="business-2-8">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Integreer een beslissingorgaan</div>
+                        <div class="check-preview">Creëer een governance-structuur voor AI-beslissingen...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Creative Sector -->
+            <div class="category-block">
+                <div class="category-header">
+                    <div class="category-icon icon-creative">🎨</div>
+                    <div class="category-title">Creatieve Sector & Media</div>
+                </div>
+                <div class="checks-grid">
+                    <div class="check-item" data-check="creative-2-1">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Voorzie een geleidelijke introductie en integratie</div>
+                        <div class="check-preview">Introduceer AI stapsgewijs in creatieve workflows...</div>
+                    </div>
+                    <div class="check-item" data-check="creative-2-2">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Bouw vertrouwen op</div>
+                        <div class="check-preview">Creëer vertrouwen in AI-tools bij creatieve teams...</div>
+                    </div>
+                    <div class="check-item" data-check="creative-2-3">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Leg de eindverantwoordelijkheid bij de redacteur</div>
+                        <div class="check-preview">Zorg dat menselijke expertise de finale controle behoudt...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Education -->
+            <div class="category-block">
+                <div class="category-header">
+                    <div class="category-icon icon-education">🎓</div>
+                    <div class="category-title">Onderwijs & AI-geletterdheid</div>
+                </div>
+                <div class="checks-grid">
+                    <div class="check-item" data-check="education-2-1">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Investeer in kennisopbouw: opleiding en ad hoc</div>
+                        <div class="check-preview">Bied doorlopende leer- en ontwikkelmogelijkheden...</div>
+                    </div>
+                    <div class="check-item" data-check="education-2-2">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Herdefinieer processen, rollen en functies</div>
+                        <div class="check-preview">Pas job descriptions en workflows aan voor AI-tijdperk...</div>
+                    </div>
+                    <div class="check-item" data-check="education-2-3">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Train teams bij AI-beoordelingsvermogens</div>
+                        <div class="check-preview">Leer teams kritisch AI-output te evalueren...</div>
+                    </div>
+                    <div class="check-item" data-check="education-2-4">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Train op herkennen van misbruik of -informatie</div>
+                        <div class="check-preview">Ontwikkel vaardigheden om AI-gerelateerde risico's te herkennen...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Phase 3: Transformatie & Expansie -->
+    <div class="phase-section phase-3" id="phase-3">
+        <div class="phase-header">
+            <div class="phase-number">Fase 3</div>
+            <div class="phase-title">Transformatie & Expansie</div>
+            <div class="phase-subtitle">Verankeren en optimaliseren voor lange termijn</div>
+        </div>
+
+        <div class="categories-container">
+            <!-- Technical Implementation -->
+            <div class="category-block">
+                <div class="category-header">
+                    <div class="category-icon icon-tech">🔧</div>
+                    <div class="category-title">Technische Implementatie & Toepassingen</div>
+                </div>
+                <div class="checks-grid">
+                    <div class="check-item" data-check="tech-3-1">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Stem IT- en data-architectuur af op AI</div>
+                        <div class="check-preview">Optimaliseer je technische infrastructuur voor AI at scale...</div>
+                    </div>
+                    <div class="check-item" data-check="tech-3-2">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Volg waarderealisatie van use-cases op</div>
+                        <div class="check-preview">Meet continu de business value van AI-investeringen...</div>
+                    </div>
+                    <div class="check-item" data-check="tech-3-3">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Monitor adoptie</div>
+                        <div class="check-preview">Track gebruikspatronen en acceptatie binnen de organisatie...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Legal & Ethics -->
+            <div class="category-block">
+                <div class="category-header">
+                    <div class="category-icon icon-legal">⚖️</div>
+                    <div class="category-title">Juridische & Ethische Aspecten</div>
+                </div>
+                <div class="checks-grid">
+                    <div class="check-item" data-check="legal-3-1">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Zet in op betrouwbare fallback-systemen</div>
+                        <div class="check-preview">Implementeer robuuste backup-plannen voor wanneer AI faalt...</div>
+                    </div>
+                    <div class="check-item" data-check="legal-3-2">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Implementeer risico- en controleraamwerk</div>
+                        <div class="check-preview">Bouw een systematisch framework voor ongoing risk management...</div>
+                    </div>
+                    <div class="check-item" data-check="legal-3-3">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Volg betrouwbaarheid en veilig gebruik op</div>
+                        <div class="check-preview">Monitor continu de veiligheid en betrouwbaarheid van AI-systemen...</div>
+                    </div>
+                    <div class="check-item" data-check="legal-3-4">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Hou 'human in the loop'</div>
+                        <div class="check-preview">Zorg dat kritische beslissingen menselijke oversight behouden...</div>
+                    </div>
+                    <div class="check-item" data-check="legal-3-5">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Hanteer een transparante bedrijfsethiek</div>
+                        <div class="check-preview">Communiceer open over ethische principes en dilemma's...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Economic Impact -->
+            <div class="category-block">
+                <div class="category-header">
+                    <div class="category-icon icon-business">💼</div>
+                    <div class="category-title">Economische Impact & Bedrijfsstrategieën</div>
+                </div>
+                <div class="checks-grid">
+                    <div class="check-item" data-check="business-3-1">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Bied verschillende ondersteuningsniveaus aan</div>
+                        <div class="check-preview">Creëer gedifferentieerde support voor verschillende gebruikersgroepen...</div>
+                    </div>
+                    <div class="check-item" data-check="business-3-2">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Optimaliseer welke teams AI ondersteunen</div>
+                        <div class="check-preview">Identificeer waar AI de meeste impact kan hebben...</div>
+                    </div>
+                    <div class="check-item" data-check="business-3-3">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Schaal individuele productiviteitswinsten op</div>
+                        <div class="check-preview">Vertaal persoonlijke efficiency gains naar team- en organisatieniveau...</div>
+                    </div>
+                    <div class="check-item" data-check="business-3-4">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Volg het gebruik van (gen)AI op</div>
+                        <div class="check-preview">Analyseer gebruiksdata om adoptie en impact te meten...</div>
+                    </div>
+                    <div class="check-item" data-check="business-3-5">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Optimaliseer je service-aanbod</div>
+                        <div class="check-preview">Verfijn je dienstverlening op basis van AI-inzichten...</div>
+                    </div>
+                    <div class="check-item" data-check="business-3-6">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Expandeer via dienstverlening omtrent AI</div>
+                        <div class="check-preview">Ontwikkel nieuwe revenue streams rond AI-expertise...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Creative Sector -->
+            <div class="category-block">
+                <div class="category-header">
+                    <div class="category-icon icon-creative">🎨</div>
+                    <div class="category-title">Creatieve Sector & Media</div>
+                </div>
+                <div class="checks-grid">
+                    <div class="check-item" data-check="creative-3-1">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Creëer nieuwe content</div>
+                        <div class="check-preview">Gebruik AI om volledig nieuwe contentformaten te ontwikkelen...</div>
+                    </div>
+                    <div class="check-item" data-check="creative-3-2">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Zoek naar nieuwe talen met AI</div>
+                        <div class="check-preview">Experimenteer met AI om nieuwe expressievormen te ontdekken...</div>
+                    </div>
+                    <div class="check-item" data-check="creative-3-3">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Plaats menselijke expertise centraal</div>
+                        <div class="check-preview">Positioneer menselijke creativiteit als leidend, AI als enabler...</div>
+                    </div>
+                    <div class="check-item" data-check="creative-3-4">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Verken het dienstverleningsmodel</div>
+                        <div class="check-preview">Herdefinieer je business model met AI-mogelijkheden...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Education -->
+            <div class="category-block">
+                <div class="category-header">
+                    <div class="category-icon icon-education">🎓</div>
+                    <div class="category-title">Onderwijs & AI-geletterdheid</div>
+                </div>
+                <div class="checks-grid">
+                    <div class="check-item" data-check="education-3-1">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Behoud menselijke expertise</div>
+                        <div class="check-preview">Investeer continu in unieke menselijke vaardigheden...</div>
+                    </div>
+                    <div class="check-item" data-check="education-3-2">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Volg impact en veranderingen op</div>
+                        <div class="check-preview">Monitor hoe AI werk en organisatie verandert...</div>
+                    </div>
+                    <div class="check-item" data-check="education-3-3">
+                        <div class="check-checkbox"></div>
+                        <div class="check-title">Vier succes</div>
+                        <div class="check-preview">Vier en communiceer successen om momentum te behouden...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal()">×</button>
+            <div class="modal-header">
+                <div class="modal-category" id="modal-category">Categorie</div>
+                <h2 class="modal-title" id="modal-title">Check Titel</h2>
+            </div>
+            <div class="modal-body" id="modal-body">
+                <!-- Content will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Check data with sample detailed content
+        const checkData = {
+            'tech-1-1': {
+                category: 'Technische Implementatie',
+                title: 'Focus op off-the-shelf toepassingen',
+                content: `
+                    <h3>Waarom dit belangrijk is</h3>
+                    <p>In de beginfase is het cruciaal om snel resultaten te boeken en enthousiasme te genereren. Off-the-shelf AI-tools bieden een laagdrempelige manier om ervaring op te doen zonder grote investeringen in custom development.</p>
+                    
+                    <h3>Concrete stappen</h3>
+                    <ul>
+                        <li>Inventariseer beschikbare SaaS AI-tools die aansluiten bij je business needs (bijv. ChatGPT Enterprise, Midjourney, Jasper)</li>
+                        <li>Start met tools die direct toegevoegde waarde bieden aan bestaande workflows</li>
+                        <li>Organiseer demo's en pilot-projecten met kleine teams</li>
+                        <li>Documenteer learnings en quick wins</li>
+                    </ul>
+                    
+                    <h3>Praktijkvoorbeeld</h3>
+                    <p>Een marketingteam begint met Jasper AI voor het genereren van eerste drafts van social media content. Na 2 maanden blijkt dit 40% tijdsbesparing op te leveren bij contentcreatie, wat ruimte geeft voor strategischer werk.</p>
+                    
+                    <h3>Valkuilen om te vermijden</h3>
+                    <ul>
+                        <li>Te snel willen customizen - bouw eerst ervaring op met standaard tools</li>
+                        <li>Geen duidelijke use case - start altijd met een specifiek probleem</li>
+                        <li>Onvoldoende training - zorg dat gebruikers de tools echt begrijpen</li>
+                    </ul>
+                `
+            },
+            'tech-1-2': {
+                category: 'Technische Implementatie',
+                title: 'Breng datamatuuriteit in kaart',
+                content: `
+                    <h3>Waarom dit belangrijk is</h3>
+                    <p>AI is zo goed als de data waarop het draait. Een eerlijke assessment van je datalandschap voorkomt teleurstellingen en helpt realistische verwachtingen te scheppen.</p>
+                    
+                    <h3>Wat te onderzoeken</h3>
+                    <ul>
+                        <li><strong>Datakwaliteit:</strong> Is je data accuraat, compleet en consistent?</li>
+                        <li><strong>Databeschikbaarheid:</strong> Heb je voldoende data en is deze toegankelijk?</li>
+                        <li><strong>Datastructuur:</strong> Is je data gestructureerd en goed gedocumenteerd?</li>
+                        <li><strong>Data governance:</strong> Zijn er duidelijke eigenaren en processen?</li>
+                    </ul>
+                    
+                    <h3>Actieplan</h3>
+                    <p>Voer een data maturity assessment uit aan de hand van frameworks zoals DAMA-DMBOK of creëer een eigen scorecard. Identificeer de grootste gaps en prioriteer verbeteracties.</p>
+                    
+                    <h3>Vuistregel</h3>
+                    <p>Als je minder dan 70% scoort op datakwaliteit en -beschikbaarheid, investeer dan eerst in datamanagement voordat je complexe AI-projecten start.</p>
+                `
+            }
+        };
+
+        // Initialize
+        let completedChecks = new Set();
+        const totalChecks = document.querySelectorAll('.check-item').length;
+        document.getElementById('total-count').textContent = totalChecks;
+
+        // Load saved progress
+        loadProgress();
+
+        // Scroll animations
+        const observerOptions = {
+            threshold: 0.2,
+            rootMargin: '0px 0px -100px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.phase-header, .category-block').forEach(el => {
+            observer.observe(el);
+        });
+
+        // Phase tracking
+        const phaseObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const phaseNum = entry.target.id.split('-')[1];
+                    updateProgressDots(phaseNum);
+                }
+            });
+        }, { threshold: 0.3 });
+
+        document.querySelectorAll('.phase-section').forEach(el => {
+            phaseObserver.observe(el);
+        });
+
+        // Scroll to top button
+        window.addEventListener('scroll', () => {
+            const scrollTop = document.querySelector('.scroll-top');
+            if (window.pageYOffset > 500) {
+                scrollTop.classList.add('visible');
+            } else {
+                scrollTop.classList.remove('visible');
+            }
+        });
+
+        // Check item clicks
+        document.querySelectorAll('.check-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                const checkId = item.dataset.check;
+                
+                // Toggle completion
+                if (e.target.classList.contains('check-checkbox') || e.target.closest('.check-checkbox')) {
+                    toggleCheck(checkId, item);
+                    e.stopPropagation();
+                } else {
+                    openModal(checkId);
+                }
+            });
+        });
+
+        // Progress dots click
+        document.querySelectorAll('.progress-dot').forEach(dot => {
+            dot.addEventListener('click', () => {
+                const phase = dot.dataset.phase;
+                if (phase === '0') {
+                    scrollToTop();
+                } else {
+                    scrollToPhase(parseInt(phase));
+                }
+            });
+        });
+
+        function toggleCheck(checkId, element) {
+            if (completedChecks.has(checkId)) {
+                completedChecks.delete(checkId);
+                element.classList.remove('completed');
+            } else {
+                completedChecks.add(checkId);
+                element.classList.add('completed');
+            }
+            updateProgress();
+            saveProgress();
+        }
+
+        function updateProgress() {
+            document.getElementById('completed-count').textContent = completedChecks.size;
+        }
+
+        function saveProgress() {
+            localStorage.setItem('genai-checklist-progress', JSON.stringify([...completedChecks]));
+        }
+
+        function loadProgress() {
+            const saved = localStorage.getItem('genai-checklist-progress');
+            if (saved) {
+                completedChecks = new Set(JSON.parse(saved));
+                completedChecks.forEach(checkId => {
+                    const element = document.querySelector(`[data-check="${checkId}"]`);
+                    if (element) {
+                        element.classList.add('completed');
+                    }
+                });
+                updateProgress();
+            }
+        }
+
+        function openModal(checkId) {
+            const data = checkData[checkId];
+            if (!data) {
+                // Generic content for checks without detailed data
+                document.getElementById('modal-category').textContent = 'GenAI Implementatie';
+                document.getElementById('modal-title').textContent = document.querySelector(`[data-check="${checkId}"] .check-title`).textContent;
+                document.getElementById('modal-body').innerHTML = `
+                    <p>Deze check helpt je om stappen te zetten in je GenAI-implementatie. Gedetailleerde informatie met concrete voorbeelden, templates en best practices wordt hier weergegeven.</p>
+                    
+                    <h3>Wat je kunt verwachten</h3>
+                    <p>Voor elke check bieden we doorgaans:</p>
+                    <ul>
+                        <li>Achtergrond en context: waarom is dit belangrijk?</li>
+                        <li>Concrete actiestappen en checklists</li>
+                        <li>Praktijkvoorbeelden en use cases</li>
+                        <li>Templates en frameworks die je direct kan gebruiken</li>
+                        <li>Valkuilen en lessons learned</li>
+                        <li>Bronnen en vervolglinks</li>
+                    </ul>
+                    
+                    <h3>Integratie met je organisatie</h3>
+                    <p>Overweeg bij het doorlopen van deze check hoe het aansluit bij:</p>
+                    <ul>
+                        <li>Je huidige organisatiestructuur en -cultuur</li>
+                        <li>Beschikbare resources (tijd, budget, mensen)</li>
+                        <li>Lopende initiatieven en prioriteiten</li>
+                        <li>Specifieke uitdagingen in jouw sector</li>
+                    </ul>
+                `;
+            } else {
+                document.getElementById('modal-category').textContent = data.category;
+                document.getElementById('modal-title').textContent = data.title;
+                document.getElementById('modal-body').innerHTML = data.content;
+            }
+            document.getElementById('modal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        // Close modal on outside click
+        document.getElementById('modal').addEventListener('click', (e) => {
+            if (e.target.id === 'modal') {
+                closeModal();
+            }
+        });
+
+        // Close modal on ESC key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+
+        function scrollToPhase(phaseNum) {
+            const phase = document.getElementById(`phase-${phaseNum}`);
+            phase.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function updateProgressDots(activePhase) {
+            document.querySelectorAll('.progress-dot').forEach(dot => {
+                dot.classList.remove('active');
+            });
+            const activeDot = document.querySelector(`[data-phase="${activePhase}"]`);
+            if (activeDot) {
+                activeDot.classList.add('active');
+            }
+        }
+    </script>
+</body>
+</html>
